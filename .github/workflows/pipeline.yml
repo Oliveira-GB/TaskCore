@@ -1,0 +1,32 @@
+name: TaskCore CI/CD
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      # 1. Baixa o código do seu repositório para a máquina virtual
+      - name: Checkout do código
+        uses: actions/checkout@v4
+
+      - name: Configurar o Java 21
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+          cache: maven
+
+      - name: Dar permissão de execução ao mvnw
+        run: chmod +x mvnw
+
+      - name: Compilar o projeto (Build)
+        run: ./mvnw clean compile
+
+      - name: Executar testes
+        run: ./mvnw test
