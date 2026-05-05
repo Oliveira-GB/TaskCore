@@ -22,6 +22,5 @@ CREATE TABLE tasks (
                        active BOOLEAN NOT NULL DEFAULT TRUE
 );
 
--- Comentários para documentação de banco de dados (Opcional, mas boa prática)
 COMMENT ON COLUMN tasks.status IS 'Armazena o estado atual da tarefa: PENDING, IN_PROGRESS ou COMPLETED';
 COMMENT ON COLUMN tasks.active IS 'Indica se o registro está ativo. Se FALSE, o registro foi excluído logicamente';
