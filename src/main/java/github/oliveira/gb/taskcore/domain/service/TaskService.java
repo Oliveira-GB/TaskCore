@@ -6,6 +6,7 @@ import github.oliveira.gb.taskcore.api.mapper.TaskMapper;
 import github.oliveira.gb.taskcore.domain.model.Task;
 import github.oliveira.gb.taskcore.domain.model.TaskStatus;
 import github.oliveira.gb.taskcore.domain.repository.TaskRepository;
+import github.oliveira.gb.taskcore.domain.validation.TaskValidator;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -16,9 +17,12 @@ public class TaskService {
 
     private final TaskRepository taskRepository;
     private final TaskMapper taskMapper;
+    private final TaskValidator taskValidator;
 
     @Transactional
     public TaskResponseDTO createTask(TaskRequestDTO taskRequestDTO) {
+        taskValidator.validateCreation(taskRequestDTO);
+
         Task task = taskMapper.toEntity(taskRequestDTO);
         task.setStatus(TaskStatus.PENDING);
 
