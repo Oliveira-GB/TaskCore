@@ -38,7 +38,6 @@ public class Task extends BaseEntity {
     private TaskStatus status;
 
     @Column(name = "due_date")
-    @NotNull(message = "The due date is required!")
     @Future(message = "Every date must have a due date in the future!")
     private LocalDateTime dueDate;
 

@@ -6,6 +6,7 @@ import jakarta.validation.constraints.Size;
 
 import java.time.LocalDateTime;
 
+
 public record TaskRequestDTO(
         @NotBlank(message = "It is not possible to create a task without a TITLE")
         @Size(min = 3, max = 100)

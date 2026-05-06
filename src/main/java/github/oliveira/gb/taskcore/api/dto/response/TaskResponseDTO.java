@@ -12,6 +12,6 @@ public record TaskResponseDTO(
         TaskStatus status,
         LocalDateTime dueDate,
         Instant createdAt,
-        Instant updateAl
+        Instant updateAt
 ) {
 }
