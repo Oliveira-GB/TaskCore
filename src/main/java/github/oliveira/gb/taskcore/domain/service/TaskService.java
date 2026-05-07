@@ -43,7 +43,20 @@ public class TaskService {
         return taskMapper.toResponseDTO(taskFound);
     }
 
+    @Transactional
     public Page<TaskResponseDTO> findAll(Pageable pageable){
         return taskRepository.findAll(pageable).map(taskMapper::toResponseDTO);
+    }
+
+    @Transactional
+    public TaskResponseDTO updateTask(Long id, TaskRequestDTO dto) {
+        Task taskEntity = taskRepository.findById(id)
+                .orElseThrow(() -> new TaskNotFoundException("Tarefa com ID " + id + " não encontrada."));
+
+        taskValidator.validateUpdate(taskEntity, dto);
+        taskMapper.updateEntityFromDto(dto, taskEntity);
+        taskRepository.save(taskEntity);
+
+        return taskMapper.toResponseDTO(taskEntity);
     }
 }

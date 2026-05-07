@@ -76,4 +76,20 @@ public class TaskController implements GenericHeaderLocation {
         return ResponseEntity.ok(taskService.findAll(pageable));
     }
 
+    @Operation(summary = "Atualizar uma tarefa", description = "Atualiza título, descrição e prazo de uma tarefa existente. " +
+            "Não é permitido atualizar tarefas com status COMPLETED ou usar um título já existente.")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Tarefa atualizada com sucesso"),
+            @ApiResponse(responseCode = "400", description = "Dados de entrada inválidos"),
+            @ApiResponse(responseCode = "404", description = "Tarefa não encontrada"),
+            @ApiResponse(responseCode = "422", description = "Regra de negócio violada (Tarefa concluída ou título duplicado)")
+    })
+    @PutMapping("/{id}")
+    public ResponseEntity<TaskResponseDTO> update(
+            @PathVariable Long id,
+            @RequestBody @Valid TaskRequestDTO dto
+    ) {
+        TaskResponseDTO response = taskService.updateTask(id, dto);
+        return ResponseEntity.ok(response);
+    }
 }
