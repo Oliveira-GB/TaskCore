@@ -38,8 +38,7 @@ public class Task extends BaseEntity {
     private TaskStatus status;
 
     @Column(name = "due_date")
-    @Future(message = "Every date must have a due date in the future!")
-    private LocalDateTime dueDate;
+    @FutureOrPresent(message = "Every date must have a due date in the present or future!")    private LocalDateTime dueDate;
 
     @Column(name = "active", nullable = false)
     private Boolean active = Boolean.TRUE;
