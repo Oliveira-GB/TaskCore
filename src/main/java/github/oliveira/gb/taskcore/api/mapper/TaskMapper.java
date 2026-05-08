@@ -1,7 +1,9 @@
 package github.oliveira.gb.taskcore.api.mapper;
 
 import github.oliveira.gb.taskcore.api.dto.request.TaskRequestDTO;
+import github.oliveira.gb.taskcore.api.dto.response.TagResponseDTO;
 import github.oliveira.gb.taskcore.api.dto.response.TaskResponseDTO;
+import github.oliveira.gb.taskcore.domain.model.Tag;
 import github.oliveira.gb.taskcore.domain.model.Task;
 import org.mapstruct.*;
 
@@ -12,6 +14,8 @@ public interface TaskMapper {
     Task toEntity(TaskRequestDTO requestDTO);
 
     TaskResponseDTO toResponseDTO(Task task);
+
+    TagResponseDTO toTagResponseDTO(Tag tag);
 
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "status", ignore = true)
