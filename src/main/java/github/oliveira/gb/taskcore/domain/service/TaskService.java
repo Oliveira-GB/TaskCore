@@ -59,4 +59,12 @@ public class TaskService {
 
         return taskMapper.toResponseDTO(taskEntity);
     }
+
+    @Transactional
+    public void deleteTask(Long id) {
+        Task task = taskRepository.findById(id)
+                .orElseThrow(() -> new TaskNotFoundException("Tarefa com ID " + id + " não encontrada."));
+
+        taskRepository.delete(task);
+    }
 }

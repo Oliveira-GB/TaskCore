@@ -92,4 +92,16 @@ public class TaskController implements GenericHeaderLocation {
         TaskResponseDTO response = taskService.updateTask(id, dto);
         return ResponseEntity.ok(response);
     }
+
+    @Operation(summary = "Excluir uma tarefa", description = "Realiza a exclusão lógica da tarefa. " +
+            "A tarefa deixará de ser listada, mas permanecerá no banco de dados para fins de auditoria.")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "204", description = "Tarefa excluída com sucesso (Sem conteúdo no corpo)"),
+            @ApiResponse(responseCode = "404", description = "Tarefa não encontrada ou já excluída")
+    })
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> delete(@PathVariable Long id) {
+        taskService.deleteTask(id);
+        return ResponseEntity.noContent().build();
+    }
 }

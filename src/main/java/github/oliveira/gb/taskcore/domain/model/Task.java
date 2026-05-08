@@ -4,6 +4,8 @@ import github.oliveira.gb.taskcore.infrastructure.common.BaseEntity;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.*;
 import lombok.*;
+import org.hibernate.annotations.SQLDelete;
+import org.hibernate.annotations.SQLRestriction;
 
 import java.time.LocalDateTime;
 
@@ -11,6 +13,8 @@ import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "tasks")
+@SQLDelete(sql = "UPDATE tasks SET active = false WHERE id = ?")
+@SQLRestriction("active = true")
 @NoArgsConstructor
 @AllArgsConstructor
 @EqualsAndHashCode(onlyExplicitlyIncluded = true, callSuper = false)
