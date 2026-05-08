@@ -1,5 +1,6 @@
 package github.oliveira.gb.taskcore.api.controller;
 
+import github.oliveira.gb.taskcore.api.dto.request.TaskFilter;
 import github.oliveira.gb.taskcore.api.dto.request.TaskRequestDTO;
 import github.oliveira.gb.taskcore.api.dto.response.TaskResponseDTO;
 import github.oliveira.gb.taskcore.api.exception.ErrorResponseDTO;
@@ -61,21 +62,6 @@ public class TaskController implements GenericHeaderLocation {
         return ResponseEntity.ok(taskService.taskFindById(id));
     }
 
-
-    @Operation(summary = "Listar tarefas com paginação", description = "Retorna uma lista paginada de tarefas. " +
-            "O padrão é retornar 10 itens por página, ordenados pela data de criação de forma decrescente.")
-    @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "Página de tarefas retornada com sucesso")
-    })
-    @GetMapping
-    public ResponseEntity<Page<TaskResponseDTO>> findAll(
-            @org.springdoc.core.annotations.ParameterObject
-            @PageableDefault(size = 10, sort = "createdAt", direction = Sort.Direction.DESC)
-            Pageable pageable
-    ){
-        return ResponseEntity.ok(taskService.findAll(pageable));
-    }
-
     @Operation(summary = "Atualizar uma tarefa", description = "Atualiza título, descrição e prazo de uma tarefa existente. " +
             "Não é permitido atualizar tarefas com status COMPLETED ou usar um título já existente.")
     @ApiResponses(value = {
@@ -103,5 +89,18 @@ public class TaskController implements GenericHeaderLocation {
     public ResponseEntity<Void> delete(@PathVariable Long id) {
         taskService.deleteTask(id);
         return ResponseEntity.noContent().build();
+    }
+
+    @Operation(summary = "Listar tarefas com filtros e paginação", description = "Retorna uma lista paginada de tarefas. Permite filtrar opcionalmente por texto (título/descrição) e status. O padrão é retornar 10 itens por página, ordenados pela data de criação.")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Lista de tarefas retornada com sucesso")
+    })
+    @GetMapping
+    public ResponseEntity<Page<TaskResponseDTO>> findAll(
+            @org.springdoc.core.annotations.ParameterObject TaskFilter filter,
+            @org.springdoc.core.annotations.ParameterObject @PageableDefault(size = 10, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable
+    ) {
+        Page<TaskResponseDTO> response = taskService.findAll(filter, pageable);
+        return ResponseEntity.ok(response);
     }
 }

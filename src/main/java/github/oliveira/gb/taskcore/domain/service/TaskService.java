@@ -1,5 +1,6 @@
 package github.oliveira.gb.taskcore.domain.service;
 
+import github.oliveira.gb.taskcore.api.dto.request.TaskFilter;
 import github.oliveira.gb.taskcore.api.dto.request.TaskRequestDTO;
 import github.oliveira.gb.taskcore.api.dto.response.TaskResponseDTO;
 import github.oliveira.gb.taskcore.api.exception.TaskNotFoundException;
@@ -7,10 +8,12 @@ import github.oliveira.gb.taskcore.api.mapper.TaskMapper;
 import github.oliveira.gb.taskcore.domain.model.Task;
 import github.oliveira.gb.taskcore.domain.model.TaskStatus;
 import github.oliveira.gb.taskcore.domain.repository.TaskRepository;
+import github.oliveira.gb.taskcore.domain.repository.specification.TaskSpecification;
 import github.oliveira.gb.taskcore.domain.validation.TaskValidator;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -44,11 +47,6 @@ public class TaskService {
     }
 
     @Transactional
-    public Page<TaskResponseDTO> findAll(Pageable pageable){
-        return taskRepository.findAll(pageable).map(taskMapper::toResponseDTO);
-    }
-
-    @Transactional
     public TaskResponseDTO updateTask(Long id, TaskRequestDTO dto) {
         Task taskEntity = taskRepository.findById(id)
                 .orElseThrow(() -> new TaskNotFoundException("Tarefa com ID " + id + " não encontrada."));
@@ -66,5 +64,21 @@ public class TaskService {
                 .orElseThrow(() -> new TaskNotFoundException("Tarefa com ID " + id + " não encontrada."));
 
         taskRepository.delete(task);
+    }
+
+    @Transactional(readOnly = true)
+    public Page<TaskResponseDTO> findAll(TaskFilter filter, Pageable pageable) {
+        Specification<Task> spec = Specification.where((Specification<Task>) null);
+
+        if (filter.text() != null && !filter.text().isBlank()) {
+            spec = spec.and(TaskSpecification.hasText(filter.text()));
+        }
+
+        if (filter.status() != null) {
+            spec = spec.and(TaskSpecification.hasStatus(filter.status()));
+        }
+
+        return taskRepository.findAll(spec, pageable)
+                .map(taskMapper::toResponseDTO);
     }
 }
