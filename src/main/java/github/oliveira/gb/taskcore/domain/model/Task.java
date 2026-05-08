@@ -8,7 +8,8 @@ import org.hibernate.annotations.SQLDelete;
 import org.hibernate.annotations.SQLRestriction;
 
 import java.time.LocalDateTime;
-
+import java.util.ArrayList;
+import java.util.List;
 
 
 @Entity
@@ -47,4 +48,17 @@ public class Task extends BaseEntity {
 
     @Column(name = "active", nullable = false)
     private Boolean active = Boolean.TRUE;
+
+    @OneToMany(mappedBy = "task", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<Subtask> subtasks = new ArrayList<>();
+
+    public void addSubtask(Subtask subtask) {
+        this.subtasks.add(subtask);
+        subtask.setTask(this);
+    }
+
+    public void removeSubtask(Subtask subtask) {
+        this.subtasks.remove(subtask);
+        subtask.setTask(null);
+    }
 }

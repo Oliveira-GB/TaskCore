@@ -6,10 +6,10 @@ import io.swagger.v3.oas.annotations.media.Schema;
 
 import java.time.Instant;
 import java.time.LocalDateTime;
+import java.util.List;
 
-@Schema(description = "Objeto de resposta contendo os dados da tarefa criada")
+@Schema(description = "Objeto de resposta contendo os dados da tarefa detalhada")
 public record TaskResponseDTO(
-
         @Schema(description = "ID único da tarefa", example = "1")
         Long id,
 
@@ -32,6 +32,8 @@ public record TaskResponseDTO(
 
         @Schema(description = "Instante em que o registro foi atualizado pela última vez", example = "2026-05-07T14:30:00Z")
         @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss'Z'", timezone = "UTC")
-        Instant updatedAt
-) {
-}
+        Instant updatedAt,
+
+        @Schema(description = "Lista de subtarefas associadas")
+        List<SubtaskResponseDTO> subtasks
+) {}
