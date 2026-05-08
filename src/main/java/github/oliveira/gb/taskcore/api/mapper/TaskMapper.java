@@ -3,14 +3,12 @@ package github.oliveira.gb.taskcore.api.mapper;
 import github.oliveira.gb.taskcore.api.dto.request.TaskRequestDTO;
 import github.oliveira.gb.taskcore.api.dto.response.TaskResponseDTO;
 import github.oliveira.gb.taskcore.domain.model.Task;
-import org.mapstruct.Mapper;
-import org.mapstruct.Mapping;
-import org.mapstruct.MappingTarget;
-import org.mapstruct.ReportingPolicy;
+import org.mapstruct.*;
 
 @Mapper(componentModel = "spring", unmappedTargetPolicy = ReportingPolicy.IGNORE)
 public interface TaskMapper {
 
+    @Mapping(target = "tags", ignore = true)
     Task toEntity(TaskRequestDTO requestDTO);
 
     TaskResponseDTO toResponseDTO(Task task);
@@ -19,5 +17,13 @@ public interface TaskMapper {
     @Mapping(target = "status", ignore = true)
     @Mapping(target = "createdAt", ignore = true)
     @Mapping(target = "updatedAt", ignore = true)
+    @Mapping(target = "tags", ignore = true)
     void updateEntityFromDto(TaskRequestDTO dto, @MappingTarget Task entity);
+
+    @AfterMapping
+    default void linkSubtasks(@MappingTarget Task task) {
+        if (task.getSubtasks() != null) {
+            task.getSubtasks().forEach(subtask -> subtask.setTask(task));
+        }
+    }
 }
