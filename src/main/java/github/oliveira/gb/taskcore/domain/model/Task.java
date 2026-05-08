@@ -4,13 +4,20 @@ import github.oliveira.gb.taskcore.infrastructure.common.BaseEntity;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.*;
 import lombok.*;
+import org.hibernate.annotations.SQLDelete;
+import org.hibernate.annotations.SQLRestriction;
 
 import java.time.LocalDateTime;
-
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 
 
 @Entity
 @Table(name = "tasks")
+@SQLDelete(sql = "UPDATE tasks SET active = false WHERE id = ?")
+@SQLRestriction("active = true")
 @NoArgsConstructor
 @AllArgsConstructor
 @EqualsAndHashCode(onlyExplicitlyIncluded = true, callSuper = false)
@@ -38,9 +45,38 @@ public class Task extends BaseEntity {
     private TaskStatus status;
 
     @Column(name = "due_date")
-    @Future(message = "Every date must have a due date in the future!")
+    @FutureOrPresent(message = "Every date must have a due date in the present or future!")
     private LocalDateTime dueDate;
 
     @Column(name = "active", nullable = false)
     private Boolean active = Boolean.TRUE;
+
+    @OneToMany(mappedBy = "task", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<Subtask> subtasks = new ArrayList<>();
+
+    @ManyToMany(cascade = {CascadeType.PERSIST, CascadeType.MERGE})
+    @JoinTable(
+            name = "tasks_tags",
+            joinColumns = @JoinColumn(name = "task_id"),
+            inverseJoinColumns = @JoinColumn(name = "tag_id")
+    )
+    private Set<Tag> tags = new HashSet<>();
+
+    public void addSubtask(Subtask subtask) {
+        this.subtasks.add(subtask);
+        subtask.setTask(this);
+    }
+
+    public void removeSubtask(Subtask subtask) {
+        this.subtasks.remove(subtask);
+        subtask.setTask(null);
+    }
+
+    public void addTag(Tag tag) {
+        this.tags.add(tag);
+    }
+
+    public void removeTag(Tag tag) {
+        this.tags.remove(tag);
+    }
 }
