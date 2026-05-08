@@ -7,6 +7,7 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Set;
 
 @Schema(description = "Objeto de resposta contendo os dados da tarefa detalhada")
 public record TaskResponseDTO(
@@ -35,5 +36,8 @@ public record TaskResponseDTO(
         Instant updatedAt,
 
         @Schema(description = "Lista de subtarefas associadas")
-        List<SubtaskResponseDTO> subtasks
+        List<SubtaskResponseDTO> subtasks,
+
+        @Schema(description = "Lista de tags associadas")
+        Set<TagResponseDTO> tags
 ) {}

@@ -9,7 +9,9 @@ import org.hibernate.annotations.SQLRestriction;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 
 @Entity
@@ -52,6 +54,14 @@ public class Task extends BaseEntity {
     @OneToMany(mappedBy = "task", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Subtask> subtasks = new ArrayList<>();
 
+    @ManyToMany(cascade = {CascadeType.PERSIST, CascadeType.MERGE})
+    @JoinTable(
+            name = "tasks_tags",
+            joinColumns = @JoinColumn(name = "task_id"),
+            inverseJoinColumns = @JoinColumn(name = "tag_id")
+    )
+    private Set<Tag> tags = new HashSet<>();
+
     public void addSubtask(Subtask subtask) {
         this.subtasks.add(subtask);
         subtask.setTask(this);
@@ -60,5 +70,13 @@ public class Task extends BaseEntity {
     public void removeSubtask(Subtask subtask) {
         this.subtasks.remove(subtask);
         subtask.setTask(null);
+    }
+
+    public void addTag(Tag tag) {
+        this.tags.add(tag);
+    }
+
+    public void removeTag(Tag tag) {
+        this.tags.remove(tag);
     }
 }

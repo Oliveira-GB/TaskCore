@@ -8,6 +8,10 @@ import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import java.util.Optional;
 
 public interface TaskRepository extends JpaRepository<Task, Long>, JpaSpecificationExecutor<Task> {
-    @EntityGraph(attributePaths = "subtasks")
+
+    @EntityGraph(attributePaths = {"subtasks", "tags"})
+    Optional<Task> findById(Long id);
+
+    @EntityGraph(attributePaths = {"subtasks", "tags"})
     Optional<Task> findByTitleIgnoreCase(String title);
 }

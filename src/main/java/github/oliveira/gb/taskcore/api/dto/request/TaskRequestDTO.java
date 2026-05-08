@@ -8,6 +8,7 @@ import jakarta.validation.constraints.Size;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Set;
 
 @Schema(description = "Objeto de requisição para a criação de uma tarefa")
 public record TaskRequestDTO(
@@ -26,5 +27,8 @@ public record TaskRequestDTO(
 
         @Schema(description = "Lista de subtarefas para criação em cascata")
         @Valid
-        List<SubtaskRequestDTO> subtasks
+        List<SubtaskRequestDTO> subtasks,
+
+        @Schema(description = "Nomes das tags para associação", example = "[\"estudo\", \"backend\"]")
+        Set<String> tags
 ) {}
