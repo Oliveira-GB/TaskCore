@@ -4,16 +4,6 @@ spring:
     driver-class-name: org.postgresql.Driver
     username: test
     password: test
-    hikari:
-      connection-timeout: 60000
-      validation-timeout: 5000
-      max-lifetime: 1800000
-      leak-detection-threshold: 60000
-      connection-test-query: SELECT 1
-      maximum-pool-size: 5
-      minimum-idle: 2
-      idle-timeout: 600000
-      initialization-fail-timeout: 60000
 
   jpa:
     hibernate:
@@ -23,8 +13,6 @@ spring:
       hibernate:
         format_sql: true
         dialect: org.hibernate.dialect.PostgreSQLDialect
-        connection:
-          handling_mode: DELAYED_ACQUISITION_AND_RELEASE_AFTER_TRANSACTION
 
   flyway:
     enabled: true
