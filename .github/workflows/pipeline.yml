@@ -2,9 +2,10 @@ name: TaskCore CI/CD
 
 on:
   push:
-    branches: [ "main" ]
+    # Agora o CI roda em qualquer branch de feature ou teste, não apenas na main
+    branches: [ "main", "develop", "feature/*", "test/*" ]
   pull_request:
-    branches: [ "main" ]
+    branches: [ "main", "develop" ]
 
 jobs:
   build:
@@ -15,6 +16,7 @@ jobs:
       - name: Checkout do código
         uses: actions/checkout@v4
 
+      # 2. Configura o ambiente Java 21 conforme definido no seu projeto
       - name: Configurar o Java 21
         uses: actions/setup-java@v4
         with:
@@ -22,11 +24,10 @@ jobs:
           distribution: 'temurin'
           cache: maven
 
+      # 3. Garante que o script do Maven Wrapper tenha permissão de execução no Linux
       - name: Dar permissão de execução ao mvnw
         run: chmod +x mvnw
 
-      - name: Compilar o projeto (Build)
-        run: ./mvnw clean compile
-
+      # 4. Executa o build e os testes unitários (incluindo o novo TaskServiceTest)
       - name: Executar testes
-        run: ./mvnw test
+        run: ./mvnw clean test
