@@ -2,7 +2,6 @@ name: TaskCore CI/CD
 
 on:
   push:
-    # Agora o CI roda em qualquer branch de feature ou teste, não apenas na main
     branches: [ "main", "develop", "feature/*", "test/*" ]
   pull_request:
     branches: [ "main", "develop" ]
@@ -12,11 +11,9 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      # 1. Baixa o código do seu repositório para a máquina virtual
       - name: Checkout do código
         uses: actions/checkout@v4
 
-      # 2. Configura o ambiente Java 21 conforme definido no seu projeto
       - name: Configurar o Java 21
         uses: actions/setup-java@v4
         with:
@@ -24,10 +21,17 @@ jobs:
           distribution: 'temurin'
           cache: maven
 
-      # 3. Garante que o script do Maven Wrapper tenha permissão de execução no Linux
       - name: Dar permissão de execução ao mvnw
         run: chmod +x mvnw
 
-      # 4. Executa o build e os testes unitários (incluindo o novo TaskServiceTest)
+      # Executa todos os testes (TaskServiceTest e o novo TaskControllerTest)
       - name: Executar testes
         run: ./mvnw clean test
+
+      # NOVO PASSO: Salva os relatórios do Maven (Surefire) para você baixar/visualizar no GitHub
+      - name: Salvar relatórios de teste
+        if: always() # Garante que os relatórios sejam salvos mesmo se os testes falharem
+        uses: actions/upload-artifact@v4
+        with:
+          name: relatorios-testes-maven
+          path: target/surefire-reports/
