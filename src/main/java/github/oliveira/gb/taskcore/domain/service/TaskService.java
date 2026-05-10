@@ -76,7 +76,7 @@ public class TaskService {
 
     @Transactional(readOnly = true)
     public Page<TaskResponseDTO> findAll(TaskFilter filter, Pageable pageable) {
-        Specification<Task> spec = Specification.where((Specification<Task>) null);
+        Specification<Task> spec = (root, query, cb) -> cb.conjunction();;
 
         if (filter.text() != null && !filter.text().isBlank()) {
             spec = spec.and(TaskSpecification.hasText(filter.text()));
