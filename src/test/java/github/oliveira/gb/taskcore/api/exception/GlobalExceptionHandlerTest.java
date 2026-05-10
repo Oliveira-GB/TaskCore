@@ -34,15 +34,15 @@ class GlobalExceptionHandlerTest {
 
         ResponseEntity<ErrorResponseDTO> response = handler.handleBusinessRuleException(exception, request);
 
-        Assertions.assertThat(response.getStatusCode()).isEqualTo(HttpStatus.UNPROCESSABLE_CONTENT); //
+        Assertions.assertThat(response.getStatusCode()).isEqualTo(HttpStatus.UNPROCESSABLE_CONTENT); 
 
         ErrorResponseDTO body = response.getBody();
         Assertions.assertThat(body).isNotNull();
-        Assertions.assertThat(body.status()).isEqualTo(422); //
-        Assertions.assertThat(body.error()).isEqualTo("Unprocessable Entity"); //
-        Assertions.assertThat(body.messages()).containsExactly(errorMessage); //
-        Assertions.assertThat(body.path()).isEqualTo(requestUri); //
-        Assertions.assertThat(body.timestamp()).isNotNull(); //
+        Assertions.assertThat(body.status()).isEqualTo(422); 
+        Assertions.assertThat(body.error()).isEqualTo("Unprocessable Entity"); 
+        Assertions.assertThat(body.messages()).containsExactly(errorMessage); 
+        Assertions.assertThat(body.path()).isEqualTo(requestUri); 
+        Assertions.assertThat(body.timestamp()).isNotNull(); 
     }
 
     @Test
@@ -50,21 +50,21 @@ class GlobalExceptionHandlerTest {
     void shouldHandleTaskNotFoundException() {
         String errorMessage = "Task with ID 99 not found";
         String requestUri = "/api/v1/tasks/99";
-        TaskNotFoundException exception = new TaskNotFoundException(errorMessage); //
+        TaskNotFoundException exception = new TaskNotFoundException(errorMessage); 
 
         given(request.getRequestURI()).willReturn(requestUri);
 
-        ResponseEntity<ErrorResponseDTO> response = handler.handleTaskNotFoundException(exception, request); //
+        ResponseEntity<ErrorResponseDTO> response = handler.handleTaskNotFoundException(exception, request); 
 
-        Assertions.assertThat(response.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND); //
+        Assertions.assertThat(response.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND); 
 
         ErrorResponseDTO body = response.getBody();
         Assertions.assertThat(body).isNotNull();
-        Assertions.assertThat(body.status()).isEqualTo(404); //
-        Assertions.assertThat(body.error()).isEqualTo("Task not found!"); //
-        Assertions.assertThat(body.messages()).containsExactly(errorMessage); //
-        Assertions.assertThat(body.path()).isEqualTo(requestUri); //
-        Assertions.assertThat(body.timestamp()).isNotNull(); //
+        Assertions.assertThat(body.status()).isEqualTo(404); 
+        Assertions.assertThat(body.error()).isEqualTo("Task not found!"); 
+        Assertions.assertThat(body.messages()).containsExactly(errorMessage); 
+        Assertions.assertThat(body.path()).isEqualTo(requestUri); 
+        Assertions.assertThat(body.timestamp()).isNotNull(); 
     }
 
     @Test

@@ -97,16 +97,13 @@ class TaskServiceTest {
     @Test
     @DisplayName("Should return TaskResponseDTO when task is found by ID")
     void taskFindById_ShouldReturnTaskResponseDTO_WhenSuccessful() {
-        // Arrange
         BDDMockito.given(taskRepository.findById(1L))
                 .willReturn(Optional.of(taskEntity));
         BDDMockito.given(taskMapper.toResponseDTO(taskEntity))
                 .willReturn(taskResponseDTO);
 
-        // Act
         TaskResponseDTO result = taskService.taskFindById(1L);
 
-        // Assert
         Assertions.assertThat(result).isNotNull();
         Assertions.assertThat(result.id()).isEqualTo(taskResponseDTO.id());
         Assertions.assertThat(result.title()).isEqualTo(taskResponseDTO.title());
@@ -116,12 +113,10 @@ class TaskServiceTest {
     @Test
     @DisplayName("Should throw TaskNotFoundException when task is not found by ID")
     void taskFindById_ShouldThrowTaskNotFoundException_WhenTaskDoesNotExist() {
-        // Arrange
         Long nonExistentId = 99L;
         BDDMockito.given(taskRepository.findById(nonExistentId))
                 .willReturn(Optional.empty());
 
-        // Act & Assert
         Assertions.assertThatThrownBy(() -> taskService.taskFindById(nonExistentId))
                 .isInstanceOf(TaskNotFoundException.class)
                 .hasMessage("Task with ID " + nonExistentId + " not found");
@@ -130,26 +125,21 @@ class TaskServiceTest {
     @Test
     @DisplayName("Should delete task successfully when task exists")
     void deleteTask_ShouldDeleteTask_WhenTaskExists() {
-        // Arrange
         BDDMockito.given(taskRepository.findById(1L))
                 .willReturn(Optional.of(taskEntity));
 
-        // Act
         taskService.deleteTask(1L);
 
-        // Assert
         Mockito.verify(taskRepository, Mockito.times(1)).delete(taskEntity);
     }
 
     @Test
     @DisplayName("Should throw TaskNotFoundException and not call delete when task does not exist")
     void deleteTask_ShouldThrowTaskNotFoundException_WhenTaskDoesNotExist() {
-        // Arrange
         Long nonExistentId = 99L;
         BDDMockito.given(taskRepository.findById(nonExistentId))
                 .willReturn(Optional.empty());
 
-        // Act & Assert
         Assertions.assertThatThrownBy(() -> taskService.deleteTask(nonExistentId))
                 .isInstanceOf(TaskNotFoundException.class)
                 .hasMessage("Tarefa com ID " + nonExistentId + " não encontrada.");
@@ -161,29 +151,24 @@ class TaskServiceTest {
     @Test
     @DisplayName("Should create task successfully with PENDING status when no tags are provided")
     void createTask_ShouldCreateTask_WhenNoTagsProvided() {
-        // Arrange
         BDDMockito.willDoNothing().given(taskValidator).validateCreation(taskRequestDTO);
         BDDMockito.given(taskMapper.toEntity(taskRequestDTO)).willReturn(taskEntity);
         BDDMockito.given(taskRepository.save(ArgumentMatchers.any(Task.class))).willReturn(taskEntity);
         BDDMockito.given(taskMapper.toResponseDTO(taskEntity)).willReturn(taskResponseDTO);
 
-        // Act
         TaskResponseDTO result = taskService.createTask(taskRequestDTO);
 
-        // Assert
         Assertions.assertThat(result).isNotNull();
         Assertions.assertThat(result.title()).isEqualTo(taskRequestDTO.title());
         Assertions.assertThat(taskEntity.getStatus()).isEqualTo(TaskStatus.PENDING);
 
         Mockito.verify(taskRepository, Mockito.times(1)).save(taskEntity);
-        // Garante que o TagRepository nunca foi chamado, já que a requisição não tem tags
         Mockito.verify(tagRepository, Mockito.never()).findByName(ArgumentMatchers.anyString());
     }
 
     @Test
     @DisplayName("Should create task and save new tags when tags are provided")
     void createTask_ShouldCreateTaskAndSaveTags_WhenTagsProvided() {
-        // Arrange
         Set<String> tags = Set.of("backend", "spring");
         TaskRequestDTO requestWithTags = new TaskRequestDTO(
                 "Update Client Onboarding Documentation",
@@ -204,7 +189,7 @@ class TaskServiceTest {
         BDDMockito.willDoNothing().given(taskValidator).validateCreation(requestWithTags);
         BDDMockito.given(taskMapper.toEntity(requestWithTags)).willReturn(taskEntity);
 
-        // Simula que a tag "backend" já existe no banco e "spring" é uma tag nova
+        
         BDDMockito.given(tagRepository.findByName("backend")).willReturn(Optional.of(existingTag));
         BDDMockito.given(tagRepository.findByName("spring")).willReturn(Optional.empty());
         BDDMockito.given(tagRepository.save(ArgumentMatchers.any(Tag.class))).willReturn(newTagSaved);
@@ -212,14 +197,12 @@ class TaskServiceTest {
         BDDMockito.given(taskRepository.save(ArgumentMatchers.any(Task.class))).willReturn(taskEntity);
         BDDMockito.given(taskMapper.toResponseDTO(taskEntity)).willReturn(taskResponseDTO);
 
-        // Act
         TaskResponseDTO result = taskService.createTask(requestWithTags);
-
-        // Assert
+        
         Assertions.assertThat(result).isNotNull();
         Mockito.verify(tagRepository, Mockito.times(1)).findByName("backend");
         Mockito.verify(tagRepository, Mockito.times(1)).findByName("spring");
-        // Verifica se o método save do TagRepository foi chamado exatamente 1 vez (apenas para a tag nova)
+        
         Mockito.verify(tagRepository, Mockito.times(1)).save(ArgumentMatchers.any(Tag.class));
         Mockito.verify(taskRepository, Mockito.times(1)).save(taskEntity);
     }
@@ -227,42 +210,32 @@ class TaskServiceTest {
     @Test
     @DisplayName("Should throw BusinessRuleException when validation fails during creation")
     void createTask_ShouldThrowBusinessRuleException_WhenValidationFails() {
-        // Arrange
         BDDMockito.willThrow(new BusinessRuleException("There is already a task registered with this title."))
                 .given(taskValidator).validateCreation(taskRequestDTO);
-
-        // Act & Assert
+        
         Assertions.assertThatThrownBy(() -> taskService.createTask(taskRequestDTO))
                 .isInstanceOf(BusinessRuleException.class)
                 .hasMessage("There is already a task registered with this title.");
 
-        // Verifica que o repository NUNCA foi chamado para salvar, pois o processo parou na validação
         Mockito.verify(taskRepository, Mockito.never()).save(ArgumentMatchers.any(Task.class));
     }
 
     @Test
     @DisplayName("Should update task successfully when valid data is provided")
     void updateTask_ShouldUpdateTaskSuccessfully_WhenValidDataIsProvided() {
-        // Arrange
         BDDMockito.given(taskRepository.findById(1L))
                 .willReturn(Optional.of(taskEntity));
-
         BDDMockito.willDoNothing()
                 .given(taskValidator).validateUpdate(taskEntity, taskRequestDTO);
-
         BDDMockito.willDoNothing()
                 .given(taskMapper).updateEntityFromDto(taskRequestDTO, taskEntity);
-
         BDDMockito.given(taskRepository.save(ArgumentMatchers.any(Task.class)))
                 .willReturn(taskEntity);
-
         BDDMockito.given(taskMapper.toResponseDTO(taskEntity))
                 .willReturn(taskResponseDTO);
-
-        // Act
+        
         TaskResponseDTO result = taskService.updateTask(1L, taskRequestDTO);
-
-        // Assert
+        
         Assertions.assertThat(result).isNotNull();
         Assertions.assertThat(result.title()).isEqualTo(taskResponseDTO.title());
 
@@ -275,17 +248,14 @@ class TaskServiceTest {
     @Test
     @DisplayName("Should throw TaskNotFoundException when trying to update a non-existent task")
     void updateTask_ShouldThrowTaskNotFoundException_WhenTaskDoesNotExist() {
-        // Arrange
         Long nonExistentId = 99L;
         BDDMockito.given(taskRepository.findById(nonExistentId))
                 .willReturn(Optional.empty());
 
-        // Act & Assert
         Assertions.assertThatThrownBy(() -> taskService.updateTask(nonExistentId, taskRequestDTO))
                 .isInstanceOf(TaskNotFoundException.class)
                 .hasMessage("Tarefa com ID " + nonExistentId + " não encontrada.");
-
-        // Verifica que o processo parou antes da validação e do salvamento
+        
         Mockito.verify(taskValidator, Mockito.never()).validateUpdate(ArgumentMatchers.any(), ArgumentMatchers.any());
         Mockito.verify(taskRepository, Mockito.never()).save(ArgumentMatchers.any(Task.class));
     }
@@ -293,21 +263,17 @@ class TaskServiceTest {
     @Test
     @DisplayName("Should throw BusinessRuleException when trying to update a completed task")
     void updateTask_ShouldThrowBusinessRuleException_WhenTaskIsCompleted() {
-        // Arrange
-        taskEntity.setStatus(TaskStatus.COMPLETED); // Simulando que a tarefa já está concluída
+        taskEntity.setStatus(TaskStatus.COMPLETED); 
 
         BDDMockito.given(taskRepository.findById(1L))
                 .willReturn(Optional.of(taskEntity));
-
         BDDMockito.willThrow(new BusinessRuleException("You cannot edit a task that has already been completed."))
                 .given(taskValidator).validateUpdate(taskEntity, taskRequestDTO);
-
-        // Act & Assert
+        
         Assertions.assertThatThrownBy(() -> taskService.updateTask(1L, taskRequestDTO))
                 .isInstanceOf(BusinessRuleException.class)
                 .hasMessage("You cannot edit a task that has already been completed.");
-
-        // Verifica que o processo parou na validação e nunca atualizou ou salvou os dados
+        
         Mockito.verify(taskMapper, Mockito.never()).updateEntityFromDto(ArgumentMatchers.any(), ArgumentMatchers.any());
         Mockito.verify(taskRepository, Mockito.never()).save(ArgumentMatchers.any(Task.class));
     }
@@ -315,14 +281,12 @@ class TaskServiceTest {
     @Test
     @DisplayName("Should return a paginated list of TaskResponseDTO when findAll is called")
     void findAll_ShouldReturnPagedTaskResponseDTO_WhenSuccessful() {
-        // Arrange
         TaskFilter filter = new TaskFilter("Update", TaskStatus.PENDING, Set.of("tech"));
         Pageable pageable = PageRequest.of(0, 10);
         Page<Task> taskPage = new PageImpl<>(List.of(taskEntity));
 
         Specification<Task> mockSpec = Mockito.mock(Specification.class);
-
-        // Mockamos as chamadas estáticas para os métodos reais que você criou
+        
         try (var mockedStatic = Mockito.mockStatic(TaskSpecification.class)) {
             mockedStatic.when(() -> TaskSpecification.hasText(filter.text())).thenReturn(mockSpec);
             mockedStatic.when(() -> TaskSpecification.hasStatus(filter.status())).thenReturn(mockSpec);
@@ -334,10 +298,8 @@ class TaskServiceTest {
             BDDMockito.given(taskMapper.toResponseDTO(taskEntity))
                     .willReturn(taskResponseDTO);
 
-            // Act
             Page<TaskResponseDTO> result = taskService.findAll(filter, pageable);
 
-            // Assert
             Assertions.assertThat(result).isNotNull();
             Assertions.assertThat(result.getContent()).hasSize(1);
 
