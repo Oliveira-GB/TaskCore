@@ -10,6 +10,11 @@ jobs:
   build:
     runs-on: ubuntu-latest
 
+    services:
+      docker:
+        image: docker:24-dind
+        options: --privileged
+
     steps:
       - name: Checkout do código
         uses: actions/checkout@v4
@@ -21,11 +26,17 @@ jobs:
           distribution: 'temurin'
           cache: maven
 
+      - name: Setup Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
       - name: Dar permissão de execução ao mvnw
         run: chmod +x mvnw
 
       - name: Executar testes
         run: ./mvnw clean test
+        env:
+          TESTCONTAINERS_RYUK_DISABLED: true
+          DOCKER_HOST: tcp://localhost:2375
 
       - name: Salvar relatórios de teste
         if: always()
