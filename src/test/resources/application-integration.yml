@@ -1,19 +1,19 @@
 spring:
   datasource:
-    url: jdbc:postgresql://localhost:5432/taskcore_integration_test
+    url: jdbc:postgresql://localhost:5432/taskcore_test
     driver-class-name: org.postgresql.Driver
     username: test
     password: test
     hikari:
-      connection-timeout: 30000
+      connection-timeout: 60000
       validation-timeout: 5000
       max-lifetime: 1800000
       leak-detection-threshold: 60000
       connection-test-query: SELECT 1
-      maximum-pool-size: 10
+      maximum-pool-size: 5
       minimum-idle: 2
       idle-timeout: 600000
-      max-lifetime: 1800000
+      initialization-fail-timeout: 60000
 
   jpa:
     hibernate:
@@ -35,5 +35,3 @@ logging:
   level:
     root: INFO
     github.oliveira.gb.taskcore: DEBUG
-    org.springframework.web: DEBUG
-    org.hibernate.SQL: DEBUG
