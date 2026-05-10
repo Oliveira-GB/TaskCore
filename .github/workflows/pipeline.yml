@@ -24,13 +24,11 @@ jobs:
       - name: Dar permissão de execução ao mvnw
         run: chmod +x mvnw
 
-      # Executa todos os testes (TaskServiceTest e o novo TaskControllerTest)
       - name: Executar testes
         run: ./mvnw clean test
 
-      # NOVO PASSO: Salva os relatórios do Maven (Surefire) para você baixar/visualizar no GitHub
       - name: Salvar relatórios de teste
-        if: always() # Garante que os relatórios sejam salvos mesmo se os testes falharem
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: relatorios-testes-maven
