@@ -1,0 +1,8 @@
+SET session_replication_role = 'replica';
+
+TRUNCATE TABLE tasks_tags RESTART IDENTITY CASCADE;
+TRUNCATE TABLE subtasks RESTART IDENTITY CASCADE;
+TRUNCATE TABLE tasks RESTART IDENTITY CASCADE;
+TRUNCATE TABLE tags RESTART IDENTITY CASCADE;
+
+SET session_replication_role = 'origin';
