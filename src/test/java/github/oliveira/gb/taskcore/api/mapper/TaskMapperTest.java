@@ -81,16 +81,14 @@ class TaskMapperTest {
     void shouldHandleNullListsAndOptionalFieldsGracefully() {
         TaskRequestDTO requestDto = new TaskRequestDTO(
                 "Minimal Task",
-                null, // descrição opcional
+                null, 
                 null,
-                null, // subtasks nulas
-                null  // tags nulas
+                null, 
+                null  
         );
 
-        // Action
         Task entity = mapper.toEntity(requestDto);
-
-        // Assertions
+        
         Assertions.assertThat(entity.getTitle()).isEqualTo("Minimal Task");
         Assertions.assertThat(entity.getDescription()).isNull();
         Assertions.assertThat(entity.getSubtasks()).isNullOrEmpty();
@@ -108,10 +106,8 @@ class TaskMapperTest {
                 null
         );
 
-        // Action
         Task entity = mapper.toEntity(requestDto);
-
-        // Assertions
+        
         Assertions.assertThat(entity.getSubtasks()).hasSize(1);
         Assertions.assertThat(entity.getSubtasks().get(0).getTask()).isEqualTo(entity);
     }
@@ -135,17 +131,14 @@ class TaskMapperTest {
                 "New Description Updated",
                 LocalDateTime.now().plusDays(2),
                 null,
-                Set.of("hacked-tag") // Tentativa de sobrescrever tags
+                Set.of("hacked-tag") 
         );
 
-        // Action
         mapper.updateEntityFromDto(updateDto, existingEntity);
 
-        // Assertions: O que DEVE mudar
         Assertions.assertThat(existingEntity.getTitle()).isEqualTo("New Title Updated");
         Assertions.assertThat(existingEntity.getDescription()).isEqualTo("New Description Updated");
-
-        // Assertions: O que NÃO PODE mudar (Políticas de ignorar do Mapper)
+        
         Assertions.assertThat(existingEntity.getId()).isEqualTo(99L);
         Assertions.assertThat(existingEntity.getStatus()).isEqualTo(TaskStatus.PENDING);
         Assertions.assertThat(existingEntity.getCreatedAt()).isEqualTo(originalTime);
@@ -157,16 +150,15 @@ class TaskMapperTest {
     @Test
     @DisplayName("Lógica Especializada: toEntity deve ignorar a lista de tags")
     void shouldIgnoreTagsWhenMappingToEntity() {
-        // Setup
+        
         TaskRequestDTO requestDto = new TaskRequestDTO(
                 "Task with Tags",
                 null,
                 null,
                 null,
-                Set.of("tag1", "tag2") // DTO possui tags
+                Set.of("tag1", "tag2") 
         );
-
-        // Action
+        
         Task entity = mapper.toEntity(requestDto);
 
         Assertions.assertThat(entity.getTags()).isNullOrEmpty();
