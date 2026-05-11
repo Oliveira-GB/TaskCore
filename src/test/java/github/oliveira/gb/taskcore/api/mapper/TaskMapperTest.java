@@ -3,6 +3,7 @@ package github.oliveira.gb.taskcore.api.mapper;
 import github.oliveira.gb.taskcore.api.dto.request.SubtaskRequestDTO;
 import github.oliveira.gb.taskcore.api.dto.request.TaskRequestDTO;
 import github.oliveira.gb.taskcore.api.dto.response.TaskResponseDTO;
+import github.oliveira.gb.taskcore.api.dto.response.TaskSummaryResponseDTO;
 import github.oliveira.gb.taskcore.domain.model.Subtask;
 import github.oliveira.gb.taskcore.domain.model.Tag;
 import github.oliveira.gb.taskcore.domain.model.Task;
@@ -12,8 +13,10 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.mapstruct.factory.Mappers;
 
+import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 
@@ -167,5 +170,157 @@ class TaskMapperTest {
         Task entity = mapper.toEntity(requestDto);
 
         Assertions.assertThat(entity.getTags()).isNullOrEmpty();
+    }
+
+    @Test
+    @DisplayName("Progress Calculation: Deve calcular 50.00% quando metade das subtarefas estiver completa")
+    void shouldCalculateProgressAt50Percent() {
+        Task task = new Task();
+        task.setStatus(TaskStatus.IN_PROGRESS);
+        
+        Subtask subtask1 = new Subtask();
+        subtask1.setCompleted(true);
+        Subtask subtask2 = new Subtask();
+        subtask2.setCompleted(false);
+        
+        task.addSubtask(subtask1);
+        task.addSubtask(subtask2);
+        
+        BigDecimal progress = mapper.calculateProgress(task);
+        
+        Assertions.assertThat(progress).isEqualByComparingTo(BigDecimal.valueOf(50.00));
+        Assertions.assertThat(progress.scale()).isEqualTo(2);
+    }
+
+    @Test
+    @DisplayName("Progress Calculation: Deve calcular 100.00% quando todas as subtarefas estiverem completas")
+    void shouldCalculateProgressAt100Percent() {
+        Task task = new Task();
+        task.setStatus(TaskStatus.IN_PROGRESS);
+        
+        Subtask subtask1 = new Subtask();
+        subtask1.setCompleted(true);
+        Subtask subtask2 = new Subtask();
+        subtask2.setCompleted(true);
+        
+        task.addSubtask(subtask1);
+        task.addSubtask(subtask2);
+        
+        BigDecimal progress = mapper.calculateProgress(task);
+        
+        Assertions.assertThat(progress).isEqualByComparingTo(BigDecimal.valueOf(100.00));
+    }
+
+    @Test
+    @DisplayName("Progress Calculation: Deve retornar 0.00% quando nenhuma subtarefa estiver completa")
+    void shouldCalculateProgressAt0Percent() {
+        Task task = new Task();
+        task.setStatus(TaskStatus.PENDING);
+        
+        Subtask subtask1 = new Subtask();
+        subtask1.setCompleted(false);
+        Subtask subtask2 = new Subtask();
+        subtask2.setCompleted(false);
+        
+        task.addSubtask(subtask1);
+        task.addSubtask(subtask2);
+        
+        BigDecimal progress = mapper.calculateProgress(task);
+        
+        Assertions.assertThat(progress).isEqualByComparingTo(BigDecimal.ZERO);
+    }
+
+    @Test
+    @DisplayName("Progress Calculation: Fallback Rule - Deve retornar 100.00 quando não há subtarefas e task está COMPLETED")
+    void shouldReturn100PercentWhenNoSubtasksAndCompleted() {
+        Task task = new Task();
+        task.setStatus(TaskStatus.COMPLETED);
+        task.setSubtasks(new ArrayList<>());
+        
+        BigDecimal progress = mapper.calculateProgress(task);
+        
+        Assertions.assertThat(progress).isEqualByComparingTo(BigDecimal.valueOf(100.00));
+    }
+
+    @Test
+    @DisplayName("Progress Calculation: Fallback Rule - Deve retornar 0.00 quando não há subtarefas e task não está COMPLETED")
+    void shouldReturn0PercentWhenNoSubtasksAndNotCompleted() {
+        Task task = new Task();
+        task.setStatus(TaskStatus.PENDING);
+        task.setSubtasks(new ArrayList<>());
+        
+        BigDecimal progress = mapper.calculateProgress(task);
+        
+        Assertions.assertThat(progress).isEqualByComparingTo(BigDecimal.ZERO);
+    }
+
+    @Test
+    @DisplayName("Progress Calculation: Deve arredondar corretamente para 2 casas decimais")
+    void shouldRoundProgressToTwoDecimalPlaces() {
+        Task task = new Task();
+        task.setStatus(TaskStatus.IN_PROGRESS);
+        
+        // 1/3 = 33.333... deve arredondar para 33.33
+        Subtask subtask1 = new Subtask();
+        subtask1.setCompleted(true);
+        Subtask subtask2 = new Subtask();
+        subtask2.setCompleted(false);
+        Subtask subtask3 = new Subtask();
+        subtask3.setCompleted(false);
+        
+        task.addSubtask(subtask1);
+        task.addSubtask(subtask2);
+        task.addSubtask(subtask3);
+        
+        BigDecimal progress = mapper.calculateProgress(task);
+        
+        Assertions.assertThat(progress).isEqualByComparingTo(new BigDecimal("33.33"));
+        Assertions.assertThat(progress.scale()).isEqualTo(2);
+    }
+
+    @Test
+    @DisplayName("Progress Calculation: Deve retornar progress no TaskResponseDTO")
+    void shouldIncludeProgressInResponseDTO() {
+        Task task = new Task();
+        task.setId(1L);
+        task.setTitle("Task with Progress");
+        task.setStatus(TaskStatus.IN_PROGRESS);
+        task.setCreatedAt(Instant.now());
+        task.setUpdatedAt(Instant.now());
+        
+        Subtask subtask = new Subtask();
+        subtask.setId(1L);
+        subtask.setTitle("Subtask");
+        subtask.setCompleted(true);
+        task.addSubtask(subtask);
+        
+        TaskResponseDTO responseDto = mapper.toResponseDTO(task);
+        
+        Assertions.assertThat(responseDto.progress()).isNotNull();
+        Assertions.assertThat(responseDto.progress()).isEqualByComparingTo(BigDecimal.valueOf(100.00));
+    }
+
+    @Test
+    @DisplayName("Summary DTO: Deve mapear para TaskSummaryResponseDTO sem subtarefas e sem progress")
+    void shouldMapToSummaryDtoWithoutSubtasksAndProgress() {
+        Task task = new Task();
+        task.setId(1L);
+        task.setTitle("Task Title");
+        task.setStatus(TaskStatus.IN_PROGRESS);
+        task.setCreatedAt(Instant.now());
+        task.setUpdatedAt(Instant.now());
+        
+        Subtask subtask = new Subtask();
+        subtask.setId(1L);
+        subtask.setTitle("Subtask");
+        subtask.setCompleted(true);
+        task.addSubtask(subtask);
+        
+        TaskSummaryResponseDTO summaryDto = mapper.toSummaryResponseDTO(task);
+        
+        Assertions.assertThat(summaryDto.id()).isEqualTo(1L);
+        Assertions.assertThat(summaryDto.title()).isEqualTo("Task Title");
+        // Verifica que não há campo progress no summary
+        // e não há lista de subtarefas
     }
 }

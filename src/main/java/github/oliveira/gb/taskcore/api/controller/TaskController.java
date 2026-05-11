@@ -2,9 +2,10 @@ package github.oliveira.gb.taskcore.api.controller;
 
 import github.oliveira.gb.taskcore.api.dto.request.TaskFilter;
 import github.oliveira.gb.taskcore.api.dto.request.TaskRequestDTO;
+import github.oliveira.gb.taskcore.api.dto.request.TaskStatusUpdateRequestDTO;
 import github.oliveira.gb.taskcore.api.dto.response.TaskResponseDTO;
+import github.oliveira.gb.taskcore.api.dto.response.TaskSummaryResponseDTO;
 import github.oliveira.gb.taskcore.api.exception.ErrorResponseDTO;
-import github.oliveira.gb.taskcore.domain.model.TaskStatus;
 import github.oliveira.gb.taskcore.domain.service.TaskService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -14,7 +15,6 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.apache.coyote.Response;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
@@ -22,7 +22,6 @@ import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.math.BigDecimal;
 import java.net.URI;
 
 @RestController
@@ -91,16 +90,38 @@ public class TaskController implements GenericHeaderLocation {
         return ResponseEntity.noContent().build();
     }
 
-    @Operation(summary = "Listar tarefas com filtros e paginação", description = "Retorna uma lista paginada de tarefas. Permite filtrar opcionalmente por texto (título/descrição) e status. O padrão é retornar 10 itens por página, ordenados pela data de criação.")
+    @Operation(summary = "Atualizar status da tarefa", description = "Atualiza o status da tarefa. " +
+            "Quando o status é alterado para COMPLETED, todas as subtarefas são automaticamente marcadas como concluídas (Cascade). " +
+            "Ao reabrir uma tarefa (COMPLETED -> PENDING/IN_PROGRESS), as subtarefas mantêm seu status atual (Isolation).")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Status atualizado com sucesso",
+                    content = @Content(mediaType = "application/json", schema = @Schema(implementation = TaskResponseDTO.class))),
+            @ApiResponse(responseCode = "400", description = "Dados inválidos (status nulo ou inválido)",
+                    content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorResponseDTO.class))),
+            @ApiResponse(responseCode = "404", description = "Tarefa não encontrada",
+                    content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorResponseDTO.class)))
+    })
+    @PatchMapping("/{id}/status")
+    public ResponseEntity<TaskResponseDTO> updateTaskStatus(
+            @PathVariable Long id,
+            @RequestBody @Valid TaskStatusUpdateRequestDTO statusDTO) {
+        TaskResponseDTO updatedTask = taskService.updateTaskStatus(id, statusDTO);
+        return ResponseEntity.ok(updatedTask);
+    }
+
+    @Operation(summary = "Listar tarefas com filtros e paginação", description = "Retorna uma lista paginada de tarefas. " +
+            "Permite filtrar opcionalmente por texto (título/descrição), status e prioridade. " +
+            "O padrão é retornar 10 itens por página, ordenados pela data de criação. " +
+            "Nota: Este endpoint retorna um resumo sem o campo de progresso para evitar problemas de performance.")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Lista de tarefas retornada com sucesso")
     })
     @GetMapping
-    public ResponseEntity<Page<TaskResponseDTO>> findAll(
+    public ResponseEntity<Page<TaskSummaryResponseDTO>> findAll(
             @org.springdoc.core.annotations.ParameterObject TaskFilter filter,
             @org.springdoc.core.annotations.ParameterObject @PageableDefault(size = 10, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable
     ) {
-        Page<TaskResponseDTO> response = taskService.findAll(filter, pageable);
+        Page<TaskSummaryResponseDTO> response = taskService.findAll(filter, pageable);
         return ResponseEntity.ok(response);
     }
 }

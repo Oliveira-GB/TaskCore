@@ -2,7 +2,9 @@ package github.oliveira.gb.taskcore.domain.service;
 
 import github.oliveira.gb.taskcore.api.dto.request.TaskFilter;
 import github.oliveira.gb.taskcore.api.dto.request.TaskRequestDTO;
+import github.oliveira.gb.taskcore.api.dto.request.TaskStatusUpdateRequestDTO;
 import github.oliveira.gb.taskcore.api.dto.response.TaskResponseDTO;
+import github.oliveira.gb.taskcore.api.dto.response.TaskSummaryResponseDTO;
 import github.oliveira.gb.taskcore.api.exception.TaskNotFoundException;
 import github.oliveira.gb.taskcore.api.mapper.TaskMapper;
 import github.oliveira.gb.taskcore.domain.model.Tag;
@@ -76,8 +78,48 @@ public class TaskService {
         taskRepository.delete(task);
     }
 
+    /**
+     * Updates the status of a task with cascade logic for subtasks.
+     * Cascade Rule: When transitioning to COMPLETED, all subtasks are marked as completed.
+     * Isolation Rule: When reopening (COMPLETED -> PENDING/IN_PROGRESS), subtasks are NOT modified.
+     *
+     * @param id the task ID
+     * @param statusDTO the new status
+     * @return TaskResponseDTO with calculated progress
+     */
+    @Transactional
+    public TaskResponseDTO updateTaskStatus(Long id, TaskStatusUpdateRequestDTO statusDTO) {
+        Task task = taskRepository.findById(id)
+                .orElseThrow(() -> new TaskNotFoundException("Task with ID " + id + " not found"));
+
+        TaskStatus oldStatus = task.getStatus();
+        TaskStatus newStatus = statusDTO.status();
+
+        // Cascade Rule: If transitioning to COMPLETED, mark all subtasks as completed
+        if (newStatus == TaskStatus.COMPLETED && oldStatus != TaskStatus.COMPLETED) {
+            cascadeCompletionToSubtasks(task);
+        }
+        // Isolation Rule: If reopening (COMPLETED -> PENDING/IN_PROGRESS), do NOT modify subtasks
+
+        task.setStatus(newStatus);
+        Task savedTask = taskRepository.save(task);
+
+        return taskMapper.toResponseDTO(savedTask);
+    }
+
+    /**
+     * Cascades completion status to all subtasks of a task.
+     *
+     * @param task the parent task
+     */
+    private void cascadeCompletionToSubtasks(Task task) {
+        if (task.getSubtasks() != null) {
+            task.getSubtasks().forEach(subtask -> subtask.setCompleted(true));
+        }
+    }
+
     @Transactional(readOnly = true)
-    public Page<TaskResponseDTO> findAll(TaskFilter filter, Pageable pageable) {
+    public Page<TaskSummaryResponseDTO> findAll(TaskFilter filter, Pageable pageable) {
         Specification<Task> spec = (root, query, cb) -> cb.conjunction();
 
         if (filter.text() != null && !filter.text().isBlank()) {
@@ -97,7 +139,7 @@ public class TaskService {
         }
 
         return taskRepository.findAll(spec, pageable)
-                .map(taskMapper::toResponseDTO);
+                .map(taskMapper::toSummaryResponseDTO);
     }
 
     private Set<Tag> mapTags(Set<String> tagNames) {

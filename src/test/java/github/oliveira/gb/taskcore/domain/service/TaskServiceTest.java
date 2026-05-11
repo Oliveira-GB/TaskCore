@@ -2,10 +2,13 @@ package github.oliveira.gb.taskcore.domain.service;
 
 import github.oliveira.gb.taskcore.api.dto.request.TaskFilter;
 import github.oliveira.gb.taskcore.api.dto.request.TaskRequestDTO;
+import github.oliveira.gb.taskcore.api.dto.request.TaskStatusUpdateRequestDTO;
 import github.oliveira.gb.taskcore.api.dto.response.TaskResponseDTO;
+import github.oliveira.gb.taskcore.api.dto.response.TaskSummaryResponseDTO;
 import github.oliveira.gb.taskcore.api.exception.TaskNotFoundException;
 import github.oliveira.gb.taskcore.api.mapper.TaskMapper;
 import github.oliveira.gb.taskcore.domain.exception.BusinessRuleException;
+import github.oliveira.gb.taskcore.domain.model.Subtask;
 import github.oliveira.gb.taskcore.domain.model.Tag;
 import github.oliveira.gb.taskcore.domain.model.Task;
 import github.oliveira.gb.taskcore.domain.model.TaskPriority;
@@ -84,6 +87,7 @@ class TaskServiceTest {
                 TaskStatus.PENDING,
                 TaskPriority.MEDIUM,
                 LocalDateTime.now().plusDays(2),
+                java.math.BigDecimal.ZERO,
                 Instant.now(),
                 Instant.now(),
                 Collections.emptyList(),
@@ -283,14 +287,26 @@ class TaskServiceTest {
     }
 
     @Test
-    @DisplayName("Should return a paginated list of TaskResponseDTO when findAll is called")
-    void findAll_ShouldReturnPagedTaskResponseDTO_WhenSuccessful() {
+    @DisplayName("Should return a paginated list of TaskSummaryResponseDTO when findAll is called")
+    void findAll_ShouldReturnPagedTaskSummaryResponseDTO_WhenSuccessful() {
         TaskFilter filter = new TaskFilter("Update", TaskStatus.PENDING, Set.of("tech"), null);
         Pageable pageable = PageRequest.of(0, 10);
         Page<Task> taskPage = new PageImpl<>(List.of(taskEntity));
 
+        TaskSummaryResponseDTO summaryDTO = new TaskSummaryResponseDTO(
+                taskEntity.getId(),
+                taskEntity.getTitle(),
+                taskEntity.getDescription(),
+                taskEntity.getStatus(),
+                taskEntity.getPriority(),
+                taskEntity.getDueDate(),
+                taskEntity.getCreatedAt(),
+                taskEntity.getUpdatedAt(),
+                Collections.emptySet()
+        );
+
         Specification<Task> mockSpec = Mockito.mock(Specification.class);
-        
+
         try (var mockedStatic = Mockito.mockStatic(TaskSpecification.class)) {
             mockedStatic.when(() -> TaskSpecification.hasText(filter.text())).thenReturn(mockSpec);
             mockedStatic.when(() -> TaskSpecification.hasStatus(filter.status())).thenReturn(mockSpec);
@@ -299,10 +315,10 @@ class TaskServiceTest {
             BDDMockito.given(taskRepository.findAll(ArgumentMatchers.any(Specification.class), ArgumentMatchers.eq(pageable)))
                     .willReturn(taskPage);
 
-            BDDMockito.given(taskMapper.toResponseDTO(taskEntity))
-                    .willReturn(taskResponseDTO);
+            BDDMockito.given(taskMapper.toSummaryResponseDTO(taskEntity))
+                    .willReturn(summaryDTO);
 
-            Page<TaskResponseDTO> result = taskService.findAll(filter, pageable);
+            Page<TaskSummaryResponseDTO> result = taskService.findAll(filter, pageable);
 
             Assertions.assertThat(result).isNotNull();
             Assertions.assertThat(result.getContent()).hasSize(1);
@@ -310,5 +326,158 @@ class TaskServiceTest {
             Mockito.verify(taskRepository, Mockito.times(1))
                     .findAll(ArgumentMatchers.any(Specification.class), ArgumentMatchers.eq(pageable));
         }
+    }
+
+    @Test
+    @DisplayName("Should cascade completion to subtasks when updating status to COMPLETED")
+    void updateTaskStatus_ShouldCascadeCompletionToSubtasks_WhenStatusChangedToCompleted() {
+        // Setup: Create task with incomplete subtasks
+        Task taskWithSubtasks = new Task();
+        taskWithSubtasks.setId(1L);
+        taskWithSubtasks.setStatus(TaskStatus.IN_PROGRESS);
+
+        Subtask subtask1 = new Subtask();
+        subtask1.setId(1L);
+        subtask1.setCompleted(false);
+        subtask1.setTask(taskWithSubtasks);
+
+        Subtask subtask2 = new Subtask();
+        subtask2.setId(2L);
+        subtask2.setCompleted(false);
+        subtask2.setTask(taskWithSubtasks);
+
+        taskWithSubtasks.setSubtasks(List.of(subtask1, subtask2));
+
+        TaskStatusUpdateRequestDTO statusDTO = new TaskStatusUpdateRequestDTO(TaskStatus.COMPLETED);
+
+        BDDMockito.given(taskRepository.findById(1L))
+                .willReturn(Optional.of(taskWithSubtasks));
+        BDDMockito.given(taskRepository.save(ArgumentMatchers.any(Task.class)))
+                .willReturn(taskWithSubtasks);
+        BDDMockito.given(taskMapper.toResponseDTO(taskWithSubtasks))
+                .willReturn(taskResponseDTO);
+
+        // Action: Update status to COMPLETED
+        taskService.updateTaskStatus(1L, statusDTO);
+
+        // Verification: Subtasks should be marked as completed
+        Assertions.assertThat(subtask1.isCompleted()).isTrue();
+        Assertions.assertThat(subtask2.isCompleted()).isTrue();
+        Assertions.assertThat(taskWithSubtasks.getStatus()).isEqualTo(TaskStatus.COMPLETED);
+    }
+
+    @Test
+    @DisplayName("Should not modify subtasks when reopening task from COMPLETED to PENDING")
+    void updateTaskStatus_ShouldNotModifySubtasks_WhenReopeningTask() {
+        // Setup: Create completed task with completed subtasks
+        Task completedTask = new Task();
+        completedTask.setId(1L);
+        completedTask.setStatus(TaskStatus.COMPLETED);
+
+        Subtask subtask1 = new Subtask();
+        subtask1.setId(1L);
+        subtask1.setCompleted(true); // Already completed
+        subtask1.setTask(completedTask);
+
+        completedTask.setSubtasks(List.of(subtask1));
+
+        TaskStatusUpdateRequestDTO statusDTO = new TaskStatusUpdateRequestDTO(TaskStatus.PENDING);
+
+        BDDMockito.given(taskRepository.findById(1L))
+                .willReturn(Optional.of(completedTask));
+        BDDMockito.given(taskRepository.save(ArgumentMatchers.any(Task.class)))
+                .willReturn(completedTask);
+        BDDMockito.given(taskMapper.toResponseDTO(completedTask))
+                .willReturn(taskResponseDTO);
+
+        // Action: Reopen task to PENDING
+        taskService.updateTaskStatus(1L, statusDTO);
+
+        // Verification: Subtasks should remain unchanged (Isolation Rule)
+        Assertions.assertThat(subtask1.isCompleted()).isTrue(); // Still completed
+        Assertions.assertThat(completedTask.getStatus()).isEqualTo(TaskStatus.PENDING);
+    }
+
+    @Test
+    @DisplayName("Should not modify subtasks when reopening task from COMPLETED to IN_PROGRESS")
+    void updateTaskStatus_ShouldNotModifySubtasks_WhenReopeningToInProgress() {
+        // Setup: Create completed task with mixed subtask states
+        Task completedTask = new Task();
+        completedTask.setId(1L);
+        completedTask.setStatus(TaskStatus.COMPLETED);
+
+        Subtask subtask1 = new Subtask();
+        subtask1.setId(1L);
+        subtask1.setCompleted(true);
+        subtask1.setTask(completedTask);
+
+        Subtask subtask2 = new Subtask();
+        subtask2.setId(2L);
+        subtask2.setCompleted(true);
+        subtask2.setTask(completedTask);
+
+        completedTask.setSubtasks(List.of(subtask1, subtask2));
+
+        TaskStatusUpdateRequestDTO statusDTO = new TaskStatusUpdateRequestDTO(TaskStatus.IN_PROGRESS);
+
+        BDDMockito.given(taskRepository.findById(1L))
+                .willReturn(Optional.of(completedTask));
+        BDDMockito.given(taskRepository.save(ArgumentMatchers.any(Task.class)))
+                .willReturn(completedTask);
+        BDDMockito.given(taskMapper.toResponseDTO(completedTask))
+                .willReturn(taskResponseDTO);
+
+        // Action: Reopen task to IN_PROGRESS
+        taskService.updateTaskStatus(1L, statusDTO);
+
+        // Verification: Subtasks should remain unchanged (Isolation Rule)
+        Assertions.assertThat(subtask1.isCompleted()).isTrue();
+        Assertions.assertThat(subtask2.isCompleted()).isTrue();
+        Assertions.assertThat(completedTask.getStatus()).isEqualTo(TaskStatus.IN_PROGRESS);
+    }
+
+    @Test
+    @DisplayName("Should not cascade when task is already COMPLETED and status remains COMPLETED")
+    void updateTaskStatus_ShouldNotCascade_WhenStatusUnchanged() {
+        // Setup: Create already completed task with incomplete subtasks
+        Task completedTask = new Task();
+        completedTask.setId(1L);
+        completedTask.setStatus(TaskStatus.COMPLETED);
+
+        Subtask subtask1 = new Subtask();
+        subtask1.setId(1L);
+        subtask1.setCompleted(false); // Not completed
+        subtask1.setTask(completedTask);
+
+        completedTask.setSubtasks(List.of(subtask1));
+
+        TaskStatusUpdateRequestDTO statusDTO = new TaskStatusUpdateRequestDTO(TaskStatus.COMPLETED);
+
+        BDDMockito.given(taskRepository.findById(1L))
+                .willReturn(Optional.of(completedTask));
+        BDDMockito.given(taskRepository.save(ArgumentMatchers.any(Task.class)))
+                .willReturn(completedTask);
+        BDDMockito.given(taskMapper.toResponseDTO(completedTask))
+                .willReturn(taskResponseDTO);
+
+        // Action: Update status to COMPLETED (unchanged)
+        taskService.updateTaskStatus(1L, statusDTO);
+
+        // Verification: Subtasks should remain unchanged (no cascade needed)
+        Assertions.assertThat(subtask1.isCompleted()).isFalse(); // Still not completed
+    }
+
+    @Test
+    @DisplayName("Should throw TaskNotFoundException when updating status of non-existent task")
+    void updateTaskStatus_ShouldThrowTaskNotFoundException_WhenTaskDoesNotExist() {
+        Long nonExistentId = 999L;
+        TaskStatusUpdateRequestDTO statusDTO = new TaskStatusUpdateRequestDTO(TaskStatus.COMPLETED);
+
+        BDDMockito.given(taskRepository.findById(nonExistentId))
+                .willReturn(Optional.empty());
+
+        Assertions.assertThatThrownBy(() -> taskService.updateTaskStatus(nonExistentId, statusDTO))
+                .isInstanceOf(TaskNotFoundException.class)
+                .hasMessage("Task with ID " + nonExistentId + " not found");
     }
 }
