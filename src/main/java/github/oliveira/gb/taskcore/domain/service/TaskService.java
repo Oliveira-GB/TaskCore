@@ -7,6 +7,7 @@ import github.oliveira.gb.taskcore.api.exception.TaskNotFoundException;
 import github.oliveira.gb.taskcore.api.mapper.TaskMapper;
 import github.oliveira.gb.taskcore.domain.model.Tag;
 import github.oliveira.gb.taskcore.domain.model.Task;
+import github.oliveira.gb.taskcore.domain.model.TaskPriority;
 import github.oliveira.gb.taskcore.domain.model.TaskStatus;
 import github.oliveira.gb.taskcore.domain.repository.TagRepository;
 import github.oliveira.gb.taskcore.domain.repository.TaskRepository;
@@ -38,6 +39,7 @@ public class TaskService {
 
         Task task = taskMapper.toEntity(taskRequestDTO);
         task.setStatus(TaskStatus.PENDING);
+        task.setPriority(taskRequestDTO.priority() != null ? taskRequestDTO.priority() : TaskPriority.MEDIUM);
         task.setTags(mapTags(taskRequestDTO.tags()));
 
         var taskEntity = taskRepository.save(task);
@@ -59,6 +61,7 @@ public class TaskService {
 
         taskValidator.validateUpdate(taskEntity, dto);
         taskMapper.updateEntityFromDto(dto, taskEntity);
+        taskEntity.setPriority(dto.priority() != null ? dto.priority() : TaskPriority.MEDIUM);
         taskEntity.setTags(mapTags(dto.tags()));
 
         taskRepository.save(taskEntity);
@@ -76,7 +79,7 @@ public class TaskService {
 
     @Transactional(readOnly = true)
     public Page<TaskResponseDTO> findAll(TaskFilter filter, Pageable pageable) {
-        Specification<Task> spec = (root, query, cb) -> cb.conjunction();;
+        Specification<Task> spec = (root, query, cb) -> cb.conjunction();
 
         if (filter.text() != null && !filter.text().isBlank()) {
             spec = spec.and(TaskSpecification.hasText(filter.text()));
@@ -88,6 +91,10 @@ public class TaskService {
 
         if (filter.tags() != null && !filter.tags().isEmpty()) {
             spec = spec.and(TaskSpecification.hasTags(filter.tags()));
+        }
+
+        if (filter.priority() != null) {
+            spec = spec.and(TaskSpecification.hasPriority(filter.priority()));
         }
 
         return taskRepository.findAll(spec, pageable)

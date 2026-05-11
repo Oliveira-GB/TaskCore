@@ -1,6 +1,7 @@
 package github.oliveira.gb.taskcore.api.dto.response;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
+import github.oliveira.gb.taskcore.domain.model.TaskPriority;
 import github.oliveira.gb.taskcore.domain.model.TaskStatus;
 import io.swagger.v3.oas.annotations.media.Schema;
 
@@ -22,6 +23,9 @@ public record TaskResponseDTO(
 
         @Schema(description = "Status atual da tarefa", example = "PENDING")
         TaskStatus status,
+
+        @Schema(description = "Nível de prioridade da tarefa", example = "HIGH")
+        TaskPriority priority,
 
         @Schema(description = "Data limite para a conclusão da tarefa", example = "2026-12-31T23:59:59")
         @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss")

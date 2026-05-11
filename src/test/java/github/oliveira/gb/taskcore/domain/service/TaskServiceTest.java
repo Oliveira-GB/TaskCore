@@ -8,6 +8,7 @@ import github.oliveira.gb.taskcore.api.mapper.TaskMapper;
 import github.oliveira.gb.taskcore.domain.exception.BusinessRuleException;
 import github.oliveira.gb.taskcore.domain.model.Tag;
 import github.oliveira.gb.taskcore.domain.model.Task;
+import github.oliveira.gb.taskcore.domain.model.TaskPriority;
 import github.oliveira.gb.taskcore.domain.model.TaskStatus;
 import github.oliveira.gb.taskcore.domain.repository.TagRepository;
 import github.oliveira.gb.taskcore.domain.repository.TaskRepository;
@@ -72,7 +73,8 @@ class TaskServiceTest {
                 "Review and update the standard operating procedures for new client onboarding processes.",
                 LocalDateTime.now().plusDays(2),
                 Collections.emptyList(),
-                Collections.emptySet()
+                Collections.emptySet(),
+                null
         );
 
         taskResponseDTO = new TaskResponseDTO(
@@ -80,6 +82,7 @@ class TaskServiceTest {
                 "Update Client Onboarding Documentation",
                 "Review and update the standard operating procedures for new client onboarding processes.",
                 TaskStatus.PENDING,
+                TaskPriority.MEDIUM,
                 LocalDateTime.now().plusDays(2),
                 Instant.now(),
                 Instant.now(),
@@ -175,7 +178,8 @@ class TaskServiceTest {
                 "Review and update the standard operating procedures for new client onboarding processes.",
                 LocalDateTime.now().plusDays(2),
                 Collections.emptyList(),
-                tags
+                tags,
+                null
         );
 
         Tag existingTag = new Tag();
@@ -281,7 +285,7 @@ class TaskServiceTest {
     @Test
     @DisplayName("Should return a paginated list of TaskResponseDTO when findAll is called")
     void findAll_ShouldReturnPagedTaskResponseDTO_WhenSuccessful() {
-        TaskFilter filter = new TaskFilter("Update", TaskStatus.PENDING, Set.of("tech"));
+        TaskFilter filter = new TaskFilter("Update", TaskStatus.PENDING, Set.of("tech"), null);
         Pageable pageable = PageRequest.of(0, 10);
         Page<Task> taskPage = new PageImpl<>(List.of(taskEntity));
 

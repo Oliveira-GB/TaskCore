@@ -44,6 +44,11 @@ public class Task extends BaseEntity {
     @NotNull
     private TaskStatus status;
 
+    @Column(name = "priority", nullable = false, length = 20)
+    @Enumerated(EnumType.STRING)
+    @NotNull
+    private TaskPriority priority = TaskPriority.MEDIUM;
+
     @Column(name = "due_date")
     @FutureOrPresent(message = "Every date must have a due date in the present or future!")
     private LocalDateTime dueDate;

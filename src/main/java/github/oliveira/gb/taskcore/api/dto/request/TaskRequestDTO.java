@@ -1,5 +1,6 @@
 package github.oliveira.gb.taskcore.api.dto.request;
 
+import github.oliveira.gb.taskcore.domain.model.TaskPriority;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.FutureOrPresent;
@@ -30,5 +31,8 @@ public record TaskRequestDTO(
         List<SubtaskRequestDTO> subtasks,
 
         @Schema(description = "Nomes das tags para associação", example = "[\"estudo\", \"backend\"]")
-        Set<String> tags
+        Set<String> tags,
+
+        @Schema(description = "Nível de prioridade da tarefa", example = "HIGH")
+        TaskPriority priority
 ) {}

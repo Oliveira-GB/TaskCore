@@ -32,8 +32,8 @@ class TaskValidatorTest {
     @DisplayName("Caminho Feliz: Não deve lançar exceção quando o título é único")
     void shouldPassValidationWhenTitleIsUnique() {
         String title = "New Unique Task";
-        TaskRequestDTO dto = new TaskRequestDTO(title, "Description", null, null, null);
-        
+        TaskRequestDTO dto = new TaskRequestDTO(title, "Description", null, null, null, null);
+
         given(taskRepository.findByTitleIgnoreCase(title)).willReturn(Optional.empty());
         
         Assertions.assertThatCode(() -> taskValidator.validateCreation(dto))
@@ -46,7 +46,7 @@ class TaskValidatorTest {
     @DisplayName("Cenário de Erro: Deve lançar BusinessRuleException quando título já existe na criação")
     void shouldThrowExceptionWhenTitleIsDuplicatedOnCreation() {
         String title = "Existing Task";
-        TaskRequestDTO dto = new TaskRequestDTO(title, "Description", null, null, null);
+        TaskRequestDTO dto = new TaskRequestDTO(title, "Description", null, null, null, null);
 
         Task existingTask = new Task();
         existingTask.setId(1L);
@@ -67,7 +67,7 @@ class TaskValidatorTest {
         Task existingTask = new Task();
         existingTask.setStatus(TaskStatus.COMPLETED); 
 
-        TaskRequestDTO dto = new TaskRequestDTO("New Title", null, null, null, null);
+        TaskRequestDTO dto = new TaskRequestDTO("New Title", null, null, null, null, null);
 
         Assertions.assertThatThrownBy(() -> taskValidator.validateUpdate(existingTask, dto))
                 .isInstanceOf(BusinessRuleException.class)
@@ -83,8 +83,8 @@ class TaskValidatorTest {
         existingTask.setStatus(TaskStatus.PENDING);
 
         String duplicatedTitle = "Title from another task";
-        TaskRequestDTO dto = new TaskRequestDTO(duplicatedTitle, null, null, null, null);
-        
+        TaskRequestDTO dto = new TaskRequestDTO(duplicatedTitle, null, null, null, null, null);
+
         Task otherTask = new Task();
         otherTask.setId(2L);
         given(taskRepository.findByTitleIgnoreCase(duplicatedTitle)).willReturn(Optional.of(otherTask));
@@ -106,7 +106,7 @@ class TaskValidatorTest {
         existingTask.setTitle(title);
         existingTask.setStatus(TaskStatus.IN_PROGRESS);
 
-        TaskRequestDTO dto = new TaskRequestDTO(title, null, null, null, null);
+        TaskRequestDTO dto = new TaskRequestDTO(title, null, null, null, null, null);
 
         given(taskRepository.findByTitleIgnoreCase(title)).willReturn(Optional.of(existingTask));
         
@@ -123,8 +123,8 @@ class TaskValidatorTest {
         existingTask.setStatus(TaskStatus.PENDING);
 
         String newTitle = "Brand New Title";
-        TaskRequestDTO dto = new TaskRequestDTO(newTitle, null, null, null, null);
-        
+        TaskRequestDTO dto = new TaskRequestDTO(newTitle, null, null, null, null, null);
+
         given(taskRepository.findByTitleIgnoreCase(newTitle)).willReturn(Optional.empty()); 
 
         Assertions.assertThatCode(() -> taskValidator.validateUpdate(existingTask, dto))
