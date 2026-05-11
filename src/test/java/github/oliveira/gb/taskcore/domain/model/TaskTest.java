@@ -51,4 +51,12 @@ class TaskTest {
         task.removeTag(tag1);
         Assertions.assertThat(task.getTags()).containsExactly(tag2);
     }
+
+    @Test
+    @DisplayName("Should have MEDIUM as default priority upon instantiation")
+    void shouldHaveMediumAsDefaultPriority() {
+        Task task = new Task();
+
+        Assertions.assertThat(task.getPriority()).isEqualTo(TaskPriority.MEDIUM);
+    }
 }

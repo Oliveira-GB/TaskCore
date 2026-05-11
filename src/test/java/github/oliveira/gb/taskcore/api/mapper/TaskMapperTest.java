@@ -30,7 +30,8 @@ class TaskMapperTest {
                 "Task Description",
                 LocalDateTime.now().plusDays(5),
                 List.of(subtaskDto),
-                Set.of("backend")
+                Set.of("backend"),
+                null
         );
 
         Task entity = mapper.toEntity(requestDto);
@@ -81,10 +82,11 @@ class TaskMapperTest {
     void shouldHandleNullListsAndOptionalFieldsGracefully() {
         TaskRequestDTO requestDto = new TaskRequestDTO(
                 "Minimal Task",
-                null, 
                 null,
-                null, 
-                null  
+                null,
+                null,
+                null,
+                null
         );
 
         Task entity = mapper.toEntity(requestDto);
@@ -103,6 +105,7 @@ class TaskMapperTest {
                 null,
                 null,
                 List.of(subtaskDto),
+                null,
                 null
         );
 
@@ -131,7 +134,8 @@ class TaskMapperTest {
                 "New Description Updated",
                 LocalDateTime.now().plusDays(2),
                 null,
-                Set.of("hacked-tag") 
+                Set.of("hacked-tag"),
+                null
         );
 
         mapper.updateEntityFromDto(updateDto, existingEntity);
@@ -156,7 +160,8 @@ class TaskMapperTest {
                 null,
                 null,
                 null,
-                Set.of("tag1", "tag2") 
+                Set.of("tag1", "tag2"),
+                null
         );
         
         Task entity = mapper.toEntity(requestDto);

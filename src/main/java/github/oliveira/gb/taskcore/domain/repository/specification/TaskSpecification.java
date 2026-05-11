@@ -2,6 +2,7 @@ package github.oliveira.gb.taskcore.domain.repository.specification;
 
 import github.oliveira.gb.taskcore.domain.model.Tag;
 import github.oliveira.gb.taskcore.domain.model.Task;
+import github.oliveira.gb.taskcore.domain.model.TaskPriority;
 import github.oliveira.gb.taskcore.domain.model.TaskStatus;
 import jakarta.persistence.criteria.Join;
 import lombok.experimental.UtilityClass;
@@ -34,11 +35,15 @@ public class TaskSpecification {
                 return null;
             }
 
-            // Garante que não haverá duplicatas no resultado devido ao JOIN
             query.distinct(true);
 
             Join<Task, Tag> tagJoin = root.join("tags");
             return tagJoin.get("name").in(tags);
         };
+    }
+
+    public static Specification<Task> hasPriority(TaskPriority priority) {
+        return (root, query, criteriaBuilder) ->
+                priority == null ? null : criteriaBuilder.equal(root.get("priority"), priority);
     }
 }

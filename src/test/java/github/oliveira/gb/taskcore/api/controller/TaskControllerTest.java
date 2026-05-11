@@ -5,6 +5,7 @@ import github.oliveira.gb.taskcore.api.dto.request.TaskRequestDTO;
 import github.oliveira.gb.taskcore.api.dto.response.TaskResponseDTO;
 import github.oliveira.gb.taskcore.api.exception.TaskNotFoundException;
 import github.oliveira.gb.taskcore.domain.exception.BusinessRuleException;
+import github.oliveira.gb.taskcore.domain.model.TaskPriority;
 import github.oliveira.gb.taskcore.domain.model.TaskStatus;
 import github.oliveira.gb.taskcore.domain.service.TaskService;
 import org.assertj.core.api.Assertions;
@@ -71,7 +72,8 @@ class TaskControllerTest {
                 "Review Swagger annotations and apply to controller",
                 LocalDateTime.now().plusDays(2),
                 Collections.emptyList(),
-                Collections.emptySet()
+                Collections.emptySet(),
+                null
         );
 
         taskResponseDTO = new TaskResponseDTO(
@@ -79,6 +81,7 @@ class TaskControllerTest {
                 "Study Spring Boot",
                 "Review Swagger annotations and apply to controller",
                 TaskStatus.PENDING,
+                TaskPriority.MEDIUM,
                 LocalDateTime.now().plusDays(2),
                 Instant.now(),
                 Instant.now(),
@@ -125,7 +128,8 @@ class TaskControllerTest {
                 "Description with invalid blank title and past date",
                 LocalDateTime.now().minusDays(1),
                 Collections.emptyList(),
-                Collections.emptySet()
+                Collections.emptySet(),
+                null
         );
 
         // Action & Assertions: Perform POST and expect 400 Bad Request
@@ -225,7 +229,8 @@ class TaskControllerTest {
                 "Invalid data",
                 LocalDateTime.now().minusDays(1),
                 Collections.emptyList(),
-                Collections.emptySet()
+                Collections.emptySet(),
+                null
         );
 
         // Action & Assertions: Perform PUT and expect 400 Bad Request

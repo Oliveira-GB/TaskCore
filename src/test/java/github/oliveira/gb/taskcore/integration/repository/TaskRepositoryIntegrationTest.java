@@ -3,6 +3,7 @@ package github.oliveira.gb.taskcore.integration.repository;
 import github.oliveira.gb.taskcore.domain.model.Subtask;
 import github.oliveira.gb.taskcore.domain.model.Tag;
 import github.oliveira.gb.taskcore.domain.model.Task;
+import github.oliveira.gb.taskcore.domain.model.TaskPriority;
 import github.oliveira.gb.taskcore.domain.model.TaskStatus;
 import github.oliveira.gb.taskcore.domain.repository.TaskRepository;
 import github.oliveira.gb.taskcore.domain.repository.TagRepository;
@@ -222,5 +223,79 @@ class TaskRepositoryIntegrationTest extends IntegrationTestBase {
 
         Assertions.assertThat(savedTask.getCreatedAt()).isNotNull();
         Assertions.assertThat(savedTask.getUpdatedAt()).isNotNull();
+    }
+
+    @Test
+    @DisplayName("Should save and retrieve tasks with different priorities")
+    void shouldSaveAndRetrieveTasksWithDifferentPriorities() {
+        Task criticalTask = new Task();
+        criticalTask.setTitle("Critical Task");
+        criticalTask.setStatus(TaskStatus.PENDING);
+        criticalTask.setPriority(TaskPriority.CRITICAL);
+        taskRepository.save(criticalTask);
+
+        Task highTask = new Task();
+        highTask.setTitle("High Task");
+        highTask.setStatus(TaskStatus.PENDING);
+        highTask.setPriority(TaskPriority.HIGH);
+        taskRepository.save(highTask);
+
+        Task mediumTask = new Task();
+        mediumTask.setTitle("Medium Task");
+        mediumTask.setStatus(TaskStatus.PENDING);
+        mediumTask.setPriority(TaskPriority.MEDIUM);
+        taskRepository.save(mediumTask);
+
+        Task lowTask = new Task();
+        lowTask.setTitle("Low Task");
+        lowTask.setStatus(TaskStatus.PENDING);
+        lowTask.setPriority(TaskPriority.LOW);
+        taskRepository.save(lowTask);
+
+        List<Task> allTasks = taskRepository.findAll();
+
+        Assertions.assertThat(allTasks)
+                .extracting(Task::getPriority)
+                .containsExactlyInAnyOrder(
+                        TaskPriority.CRITICAL,
+                        TaskPriority.HIGH,
+                        TaskPriority.MEDIUM,
+                        TaskPriority.LOW
+                );
+    }
+
+    @Test
+    @DisplayName("Should filter tasks by priority using Specifications")
+    void shouldFilterTasksByPriority() {
+        Task highTask = new Task();
+        highTask.setTitle("High Priority Task");
+        highTask.setStatus(TaskStatus.PENDING);
+        highTask.setPriority(TaskPriority.HIGH);
+        taskRepository.save(highTask);
+
+        Task mediumTask = new Task();
+        mediumTask.setTitle("Medium Priority Task");
+        mediumTask.setStatus(TaskStatus.PENDING);
+        mediumTask.setPriority(TaskPriority.MEDIUM);
+        taskRepository.save(mediumTask);
+
+        Specification<Task> spec = TaskSpecification.hasPriority(TaskPriority.HIGH);
+        List<Task> highPriorityTasks = taskRepository.findAll(spec);
+
+        Assertions.assertThat(highPriorityTasks).hasSize(1);
+        Assertions.assertThat(highPriorityTasks.get(0).getTitle()).isEqualTo("High Priority Task");
+        Assertions.assertThat(highPriorityTasks.get(0).getPriority()).isEqualTo(TaskPriority.HIGH);
+    }
+
+    @Test
+    @DisplayName("Should default to MEDIUM priority when not specified")
+    void shouldDefaultToMediumPriority() {
+        Task task = new Task();
+        task.setTitle("Default Priority Task");
+        task.setStatus(TaskStatus.PENDING);
+
+        Task savedTask = taskRepository.save(task);
+
+        Assertions.assertThat(savedTask.getPriority()).isEqualTo(TaskPriority.MEDIUM);
     }
 }

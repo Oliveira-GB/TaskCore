@@ -1,6 +1,7 @@
 package github.oliveira.gb.taskcore.domain.repository.specification;
 
 import github.oliveira.gb.taskcore.domain.model.Task;
+import github.oliveira.gb.taskcore.domain.model.TaskPriority;
 import github.oliveira.gb.taskcore.domain.model.TaskStatus;
 import jakarta.persistence.criteria.CriteriaBuilder;
 import jakarta.persistence.criteria.CriteriaQuery;
@@ -111,5 +112,30 @@ class TaskSpecificationTest {
 
         org.mockito.BDDMockito.then(query).should().distinct(true);
         Assertions.assertThat(result).isEqualTo(inClause);
+    }
+
+    @Test
+    @DisplayName("hasPriority: Deve retornar null quando priority for nulo")
+    void shouldReturnNullWhenPriorityIsNull() {
+        Specification<Task> spec = TaskSpecification.hasPriority(null);
+        Predicate result = spec.toPredicate(root, query, criteriaBuilder);
+        Assertions.assertThat(result).isNull();
+    }
+
+    @Test
+    @DisplayName("hasPriority: Deve criar predicate de igualdade para a prioridade")
+    @SuppressWarnings("unchecked")
+    void shouldCreateHasPrioritySpecification() {
+        TaskPriority priority = TaskPriority.HIGH;
+        Path<Object> priorityPath = mock(Path.class);
+        Predicate equalPredicate = mock(Predicate.class);
+
+        given(root.get("priority")).willReturn(priorityPath);
+        given(criteriaBuilder.equal(priorityPath, priority)).willReturn(equalPredicate);
+
+        Specification<Task> spec = TaskSpecification.hasPriority(priority);
+        Predicate result = spec.toPredicate(root, query, criteriaBuilder);
+
+        Assertions.assertThat(result).isEqualTo(equalPredicate);
     }
 }

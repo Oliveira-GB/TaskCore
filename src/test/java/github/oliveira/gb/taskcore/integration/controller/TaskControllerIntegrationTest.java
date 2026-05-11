@@ -1,9 +1,8 @@
 package github.oliveira.gb.taskcore.integration.controller;
 
 import github.oliveira.gb.taskcore.api.dto.request.TaskRequestDTO;
-import github.oliveira.gb.taskcore.api.dto.response.TaskResponseDTO;
 import github.oliveira.gb.taskcore.domain.model.Task;
-import github.oliveira.gb.taskcore.domain.model.TaskStatus;
+import github.oliveira.gb.taskcore.domain.model.TaskPriority;
 import github.oliveira.gb.taskcore.domain.repository.TaskRepository;
 import github.oliveira.gb.taskcore.integration.IntegrationTestBase;
 import org.assertj.core.api.Assertions;
@@ -43,7 +42,8 @@ class TaskControllerIntegrationTest extends IntegrationTestBase {
                 "Review Swagger annotations and apply to controller",
                 LocalDateTime.now().plusDays(2),
                 Collections.emptyList(),
-                Collections.emptySet()
+                Collections.emptySet(),
+                null
         );
     }
 
@@ -69,7 +69,8 @@ class TaskControllerIntegrationTest extends IntegrationTestBase {
                 "Description",
                 LocalDateTime.now().plusDays(2),
                 Collections.emptyList(),
-                Collections.emptySet()
+                Collections.emptySet(),
+                null
         );
 
         mockMvc.perform(post(baseUrl)
@@ -88,7 +89,8 @@ class TaskControllerIntegrationTest extends IntegrationTestBase {
                 "Description",
                 LocalDateTime.now().minusDays(1),
                 Collections.emptyList(),
-                Collections.emptySet()
+                Collections.emptySet(),
+                null
         );
 
         mockMvc.perform(post(baseUrl)
@@ -106,7 +108,8 @@ class TaskControllerIntegrationTest extends IntegrationTestBase {
                 "Description",
                 LocalDateTime.now().plusDays(2),
                 Collections.emptyList(),
-                Collections.emptySet()
+                Collections.emptySet(),
+                null
         );
 
         mockMvc.perform(post(baseUrl)
@@ -124,7 +127,8 @@ class TaskControllerIntegrationTest extends IntegrationTestBase {
                 "Description",
                 LocalDateTime.now().plusDays(5),
                 Collections.emptyList(),
-                Collections.emptySet()
+                Collections.emptySet(),
+                null
         );
 
         MvcResult createResult = mockMvc.perform(post(baseUrl)
@@ -159,7 +163,8 @@ class TaskControllerIntegrationTest extends IntegrationTestBase {
                 "Original Description",
                 LocalDateTime.now().plusDays(5),
                 Collections.emptyList(),
-                Collections.emptySet()
+                Collections.emptySet(),
+                null
         );
 
         MvcResult createResult = mockMvc.perform(post(baseUrl)
@@ -175,7 +180,8 @@ class TaskControllerIntegrationTest extends IntegrationTestBase {
                 "Updated Description",
                 LocalDateTime.now().plusDays(10),
                 Collections.emptyList(),
-                Collections.emptySet()
+                Collections.emptySet(),
+                null
         );
 
         mockMvc.perform(put(baseUrl + "/{id}", taskId)
@@ -194,7 +200,8 @@ class TaskControllerIntegrationTest extends IntegrationTestBase {
                 "Updated Description",
                 LocalDateTime.now().plusDays(10),
                 Collections.emptyList(),
-                Collections.emptySet()
+                Collections.emptySet(),
+                null
         );
 
         mockMvc.perform(put(baseUrl + "/{id}", 99999L)
@@ -212,7 +219,8 @@ class TaskControllerIntegrationTest extends IntegrationTestBase {
                 "Description",
                 LocalDateTime.now().plusDays(5),
                 Collections.emptyList(),
-                Collections.emptySet()
+                Collections.emptySet(),
+                null
         );
 
         MvcResult createResult = mockMvc.perform(post(baseUrl)
@@ -248,7 +256,8 @@ class TaskControllerIntegrationTest extends IntegrationTestBase {
                     "Description " + i,
                     LocalDateTime.now().plusDays(i + 1),
                     Collections.emptyList(),
-                    Collections.emptySet()
+                    Collections.emptySet(),
+                    null
             );
             mockMvc.perform(post(baseUrl)
                             .contentType(MediaType.APPLICATION_JSON)
@@ -262,6 +271,140 @@ class TaskControllerIntegrationTest extends IntegrationTestBase {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.content").isArray())
                 .andExpect(jsonPath("$.totalElements").value(3))
+                .andDo(print());
+    }
+
+    @Test
+    @DisplayName("E2E: Should create task with specific priority and return priority in response")
+    void shouldCreateTaskWithSpecificPriority() throws Exception {
+        TaskRequestDTO requestWithPriority = new TaskRequestDTO(
+                "High Priority Task",
+                "Description",
+                LocalDateTime.now().plusDays(5),
+                Collections.emptyList(),
+                Collections.emptySet(),
+                TaskPriority.HIGH
+        );
+
+        mockMvc.perform(post(baseUrl)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(toJson(requestWithPriority)))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.priority").value("HIGH"))
+                .andDo(print());
+    }
+
+    @Test
+    @DisplayName("E2E: Should default to MEDIUM priority when priority is not provided")
+    void shouldDefaultToMediumPriorityWhenNotProvided() throws Exception {
+        String jsonWithoutPriority = """
+                {
+                    "title": "Task Without Priority",
+                    "description": "Description",
+                    "dueDate": "%s"
+                }
+                """.formatted(LocalDateTime.now().plusDays(5).toString());
+
+        mockMvc.perform(post(baseUrl)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(jsonWithoutPriority))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.priority").value("MEDIUM"))
+                .andDo(print());
+    }
+
+    @Test
+    @DisplayName("E2E: Should update task priority successfully")
+    void shouldUpdateTaskPriority() throws Exception {
+        TaskRequestDTO createRequest = new TaskRequestDTO(
+                "Task to Update Priority",
+                "Description",
+                LocalDateTime.now().plusDays(5),
+                Collections.emptyList(),
+                Collections.emptySet(),
+                TaskPriority.LOW
+        );
+
+        MvcResult createResult = mockMvc.perform(post(baseUrl)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(toJson(createRequest)))
+                .andExpect(status().isCreated())
+                .andReturn();
+
+        Long taskId = extractIdFromLocation(createResult.getResponse().getHeader("Location"));
+
+        TaskRequestDTO updateRequest = new TaskRequestDTO(
+                "Task to Update Priority",
+                "Description",
+                LocalDateTime.now().plusDays(5),
+                Collections.emptyList(),
+                Collections.emptySet(),
+                TaskPriority.CRITICAL
+        );
+
+        mockMvc.perform(put(baseUrl + "/{id}", taskId)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(toJson(updateRequest)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.priority").value("CRITICAL"))
+                .andDo(print());
+    }
+
+    @Test
+    @DisplayName("E2E: Should filter tasks by priority query parameter")
+    void shouldFilterTasksByPriority() throws Exception {
+        TaskRequestDTO highPriorityRequest = new TaskRequestDTO(
+                "High Priority Task",
+                "Description",
+                LocalDateTime.now().plusDays(5),
+                Collections.emptyList(),
+                Collections.emptySet(),
+                TaskPriority.HIGH
+        );
+
+        TaskRequestDTO mediumPriorityRequest = new TaskRequestDTO(
+                "Medium Priority Task",
+                "Description",
+                LocalDateTime.now().plusDays(5),
+                Collections.emptyList(),
+                Collections.emptySet(),
+                TaskPriority.MEDIUM
+        );
+
+        mockMvc.perform(post(baseUrl)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(toJson(highPriorityRequest)))
+                .andExpect(status().isCreated());
+
+        mockMvc.perform(post(baseUrl)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(toJson(mediumPriorityRequest)))
+                .andExpect(status().isCreated());
+
+        mockMvc.perform(get(baseUrl)
+                        .param("priority", "HIGH"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.content").isArray())
+                .andExpect(jsonPath("$.content[0].priority").value("HIGH"))
+                .andDo(print());
+    }
+
+    @Test
+    @DisplayName("E2E: Should return 400 Bad Request for invalid priority value")
+    void shouldReturn400ForInvalidPriority() throws Exception {
+        String jsonWithInvalidPriority = """
+                {
+                    "title": "Task With Invalid Priority",
+                    "description": "Description",
+                    "dueDate": "%s",
+                    "priority": "INVALID_PRIORITY"
+                }
+                """.formatted(LocalDateTime.now().plusDays(5).toString());
+
+        mockMvc.perform(post(baseUrl)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(jsonWithInvalidPriority))
+                .andExpect(status().isBadRequest())
                 .andDo(print());
     }
 
