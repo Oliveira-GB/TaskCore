@@ -1,6 +1,6 @@
 spring:
   datasource:
-    url: jdbc:postgresql://localhost:5432/taskcore_integration_test
+    url: jdbc:postgresql://localhost:5432/taskcore_test
     driver-class-name: org.postgresql.Driver
     username: test
     password: test
@@ -23,5 +23,3 @@ logging:
   level:
     root: INFO
     github.oliveira.gb.taskcore: DEBUG
-    org.springframework.web: DEBUG
-    org.hibernate.SQL: DEBUG

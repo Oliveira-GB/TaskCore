@@ -36,6 +36,7 @@ jobs:
         run: ./mvnw clean test
         env:
           TESTCONTAINERS_RYUK_DISABLED: true
+          TESTCONTAINERS_CHECKS_DISABLE: true
           DOCKER_HOST: tcp://localhost:2375
 
       - name: Salvar relatórios de teste
