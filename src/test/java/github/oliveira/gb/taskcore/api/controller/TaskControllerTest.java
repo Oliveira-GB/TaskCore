@@ -1,8 +1,11 @@
 package github.oliveira.gb.taskcore.api.controller;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import github.oliveira.gb.taskcore.api.dto.request.TaskFilter;
 import github.oliveira.gb.taskcore.api.dto.request.TaskRequestDTO;
+import github.oliveira.gb.taskcore.api.dto.request.TaskStatusUpdateRequestDTO;
 import github.oliveira.gb.taskcore.api.dto.response.TaskResponseDTO;
+import github.oliveira.gb.taskcore.api.dto.response.TaskSummaryResponseDTO;
 import github.oliveira.gb.taskcore.api.exception.TaskNotFoundException;
 import github.oliveira.gb.taskcore.domain.exception.BusinessRuleException;
 import github.oliveira.gb.taskcore.domain.model.TaskPriority;
@@ -14,38 +17,27 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.ActiveProfiles;
-import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.test.web.servlet.MockMvc;
-import com.fasterxml.jackson.databind.ObjectMapper;
 
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.util.Collections;
 import java.util.List;
 
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyLong;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.BDDMockito.given;
-import static org.mockito.BDDMockito.then;
-import static org.mockito.BDDMockito.willDoNothing;
-import static org.mockito.BDDMockito.willThrow;
+import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.BDDMockito.*;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @SpringBootTest
 @AutoConfigureMockMvc
@@ -83,6 +75,7 @@ class TaskControllerTest {
                 TaskStatus.PENDING,
                 TaskPriority.MEDIUM,
                 LocalDateTime.now().plusDays(2),
+                java.math.BigDecimal.ZERO,
                 Instant.now(),
                 Instant.now(),
                 Collections.emptyList(),
@@ -319,8 +312,19 @@ class TaskControllerTest {
     @Test
     @DisplayName("Paginated Search: Should return 200 OK and a page of tasks based on filters")
     void shouldReturn200AndPageOfTasks() throws Exception {
-        // Setup: Create a mock page containing our response DTO
-        Page<TaskResponseDTO> taskPage = new PageImpl<>(List.of(taskResponseDTO));
+        // Setup: Create a mock page containing summary DTO (no progress field)
+        TaskSummaryResponseDTO summaryDTO = new TaskSummaryResponseDTO(
+                taskResponseDTO.id(),
+                taskResponseDTO.title(),
+                taskResponseDTO.description(),
+                taskResponseDTO.status(),
+                taskResponseDTO.priority(),
+                taskResponseDTO.dueDate(),
+                taskResponseDTO.createdAt(),
+                taskResponseDTO.updatedAt(),
+                taskResponseDTO.tags()
+        );
+        Page<TaskSummaryResponseDTO> taskPage = new PageImpl<>(List.of(summaryDTO));
 
         // Mock the service behavior to return the page when findAll is called
         given(taskService.findAll(any(TaskFilter.class), any(Pageable.class)))
@@ -341,5 +345,93 @@ class TaskControllerTest {
 
         // Verification: Ensure the service was called exactly once with the filters and pageable
         then(taskService).should(times(1)).findAll(any(TaskFilter.class), any(Pageable.class));
+    }
+
+    @Test
+    @DisplayName("Happy Path: Should update task status to COMPLETED and return 200 OK")
+    void shouldUpdateTaskStatusToCompletedSuccessfully() throws Exception {
+        // Setup: Mock the service behavior for status update
+        Long taskId = 1L;
+        String jsonRequest = """
+                {
+                    "status": "COMPLETED"
+                }
+                """;
+
+        given(taskService.updateTaskStatus(eq(taskId), any(TaskStatusUpdateRequestDTO.class)))
+                .willReturn(taskResponseDTO);
+
+        // Action & Assertions: Perform PATCH and validate response
+        mockMvc.perform(patch(baseUrl + "/{id}/status", taskId)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(jsonRequest))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(taskResponseDTO.id()))
+                .andExpect(jsonPath("$.title").value(taskResponseDTO.title()));
+
+        // Verification: Ensure the service was called exactly once
+        then(taskService).should(times(1)).updateTaskStatus(eq(taskId), any(TaskStatusUpdateRequestDTO.class));
+    }
+
+    @Test
+    @DisplayName("Happy Path: Should allow reopening task from COMPLETED to PENDING")
+    void shouldAllowReopeningTaskToPending() throws Exception {
+        Long taskId = 1L;
+        String jsonRequest = """
+                {
+                    "status": "PENDING"
+                }
+                """;
+
+        given(taskService.updateTaskStatus(eq(taskId), any(TaskStatusUpdateRequestDTO.class)))
+                .willReturn(taskResponseDTO);
+
+        mockMvc.perform(patch(baseUrl + "/{id}/status", taskId)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(jsonRequest))
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    @DisplayName("Validation Error: Should return 400 Bad Request when status is null")
+    void shouldReturn400WhenStatusIsNull() throws Exception {
+        Long taskId = 1L;
+        String jsonRequest = """
+                {
+                    "status": null
+                }
+                """;
+
+        mockMvc.perform(patch(baseUrl + "/{id}/status", taskId)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(jsonRequest))
+                .andExpect(status().isBadRequest());
+
+        // Verification: Ensure the service was NEVER called due to validation failure
+        then(taskService).should(never()).updateTaskStatus(anyLong(), any(TaskStatusUpdateRequestDTO.class));
+    }
+
+    @Test
+    @DisplayName("Not Found Error: Should return 404 Not Found when task does not exist")
+    void shouldReturn404WhenUpdatingStatusOfNonExistentTask() throws Exception {
+        Long taskId = 999L;
+        String jsonRequest = """
+                {
+                    "status": "COMPLETED"
+                }
+                """;
+        String errorMessage = "Task with ID " + taskId + " not found";
+
+        given(taskService.updateTaskStatus(eq(taskId), any(TaskStatusUpdateRequestDTO.class)))
+                .willThrow(new TaskNotFoundException(errorMessage));
+
+        mockMvc.perform(patch(baseUrl + "/{id}/status", taskId)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(jsonRequest))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.messages[0]").value(errorMessage));
+
+        // Verification: Ensure the service was called once before throwing
+        then(taskService).should(times(1)).updateTaskStatus(eq(taskId), any(TaskStatusUpdateRequestDTO.class));
     }
 }

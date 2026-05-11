@@ -408,6 +408,181 @@ class TaskControllerIntegrationTest extends IntegrationTestBase {
                 .andDo(print());
     }
 
+    @Test
+    @DisplayName("E2E: Should update task status to COMPLETED and cascade to subtasks")
+    void shouldUpdateStatusToCompletedAndCascadeToSubtasks() throws Exception {
+        // First create a task with subtasks
+        String jsonWithSubtasks = """
+                {
+                    "title": "Task with Subtasks for Cascade Test",
+                    "description": "Description",
+                    "dueDate": "%s",
+                    "subtasks": [
+                        {"title": "Subtask 1", "completed": false},
+                        {"title": "Subtask 2", "completed": false}
+                    ]
+                }
+                """.formatted(LocalDateTime.now().plusDays(5).toString());
+
+        MvcResult createResult = mockMvc.perform(post(baseUrl)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(jsonWithSubtasks))
+                .andExpect(status().isCreated())
+                .andReturn();
+
+        Long taskId = extractIdFromLocation(createResult.getResponse().getHeader("Location"));
+
+        // Verify initial state - subtasks should not be completed
+        mockMvc.perform(get(baseUrl + "/{id}", taskId))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("PENDING"))
+                .andExpect(jsonPath("$.subtasks[0].completed").value(false))
+                .andExpect(jsonPath("$.subtasks[1].completed").value(false))
+                .andExpect(jsonPath("$.progress").value(0.00));
+
+        // Update status to COMPLETED
+        String statusUpdateJson = """
+                {
+                    "status": "COMPLETED"
+                }
+                """;
+
+        mockMvc.perform(patch(baseUrl + "/{id}/status", taskId)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(statusUpdateJson))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("COMPLETED"))
+                .andExpect(jsonPath("$.subtasks[0].completed").value(true))
+                .andExpect(jsonPath("$.subtasks[1].completed").value(true))
+                .andExpect(jsonPath("$.progress").value(100.00))
+                .andDo(print());
+    }
+
+    @Test
+    @DisplayName("E2E: Should reopen task without modifying subtasks (Isolation Rule)")
+    void shouldReopenTaskWithoutModifyingSubtasks() throws Exception {
+        // Create a completed task with completed subtasks
+        String jsonWithCompletedSubtasks = """
+                {
+                    "title": "Completed Task for Reopen Test",
+                    "description": "Description",
+                    "dueDate": "%s",
+                    "subtasks": [
+                        {"title": "Subtask 1", "completed": true},
+                        {"title": "Subtask 2", "completed": true}
+                    ]
+                }
+                """.formatted(LocalDateTime.now().plusDays(5).toString());
+
+        MvcResult createResult = mockMvc.perform(post(baseUrl)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(jsonWithCompletedSubtasks))
+                .andExpect(status().isCreated())
+                .andReturn();
+
+        Long taskId = extractIdFromLocation(createResult.getResponse().getHeader("Location"));
+
+        // Complete the task first
+        String completeStatusJson = """
+                {
+                    "status": "COMPLETED"
+                }
+                """;
+
+        mockMvc.perform(patch(baseUrl + "/{id}/status", taskId)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(completeStatusJson))
+                .andExpect(status().isOk());
+
+        // Reopen the task to PENDING
+        String reopenStatusJson = """
+                {
+                    "status": "PENDING"
+                }
+                """;
+
+        mockMvc.perform(patch(baseUrl + "/{id}/status", taskId)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(reopenStatusJson))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("PENDING"))
+                // Subtasks should remain completed (Isolation Rule)
+                .andExpect(jsonPath("$.subtasks[0].completed").value(true))
+                .andExpect(jsonPath("$.subtasks[1].completed").value(true))
+                // Progress should remain 100% since subtasks are still completed
+                .andExpect(jsonPath("$.progress").value(100.00))
+                .andDo(print());
+    }
+
+    @Test
+    @DisplayName("E2E: Should return progress field in task detail response")
+    void shouldReturnProgressFieldInDetailResponse() throws Exception {
+        TaskRequestDTO request = new TaskRequestDTO(
+                "Task for Progress Test",
+                "Description",
+                LocalDateTime.now().plusDays(5),
+                Collections.emptyList(),
+                Collections.emptySet(),
+                null
+        );
+
+        MvcResult createResult = mockMvc.perform(post(baseUrl)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(toJson(request)))
+                .andExpect(status().isCreated())
+                .andReturn();
+
+        Long taskId = extractIdFromLocation(createResult.getResponse().getHeader("Location"));
+
+        // Verify progress field exists in detail response
+        mockMvc.perform(get(baseUrl + "/{id}", taskId))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.progress").exists())
+                .andExpect(jsonPath("$.progress").value(0.00))
+                .andDo(print());
+    }
+
+    @Test
+    @DisplayName("E2E: Should NOT return progress field in list response")
+    void shouldNotReturnProgressFieldInListResponse() throws Exception {
+        TaskRequestDTO request = new TaskRequestDTO(
+                "Task for List Progress Test",
+                "Description",
+                LocalDateTime.now().plusDays(5),
+                Collections.emptyList(),
+                Collections.emptySet(),
+                null
+        );
+
+        mockMvc.perform(post(baseUrl)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(toJson(request)))
+                .andExpect(status().isCreated());
+
+        // Verify progress field does NOT exist in list response
+        mockMvc.perform(get(baseUrl))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.content[0].progress").doesNotExist())
+                .andExpect(jsonPath("$.content[0].subtasks").doesNotExist())
+                .andDo(print());
+    }
+
+    @Test
+    @DisplayName("E2E: Should return 400 Bad Request when status is null in PATCH")
+    void shouldReturn400ForNullStatus() throws Exception {
+        String jsonWithNullStatus = """
+                {
+                    "status": null
+                }
+                """;
+
+        mockMvc.perform(patch(baseUrl + "/{id}/status", 999L)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(jsonWithNullStatus))
+                .andExpect(status().isBadRequest())
+                .andDo(print());
+    }
+
     private String toJson(Object obj) {
         try {
             return new com.fasterxml.jackson.databind.ObjectMapper()

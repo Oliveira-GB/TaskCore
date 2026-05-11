@@ -5,21 +5,23 @@ import github.oliveira.gb.taskcore.domain.model.TaskPriority;
 import github.oliveira.gb.taskcore.domain.model.TaskStatus;
 import io.swagger.v3.oas.annotations.media.Schema;
 
-import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.LocalDateTime;
-import java.util.List;
 import java.util.Set;
 
-@Schema(description = "Objeto de resposta contendo os dados da tarefa detalhada")
-public record TaskResponseDTO(
+/**
+ * DTO for task summary in list views.
+ * Excludes progress and subtasks to avoid N+1 queries in paginated results.
+ */
+@Schema(description = "Resumo da tarefa para listagens")
+public record TaskSummaryResponseDTO(
         @Schema(description = "ID único da tarefa", example = "1")
         Long id,
 
         @Schema(description = "Título da tarefa", example = "Estudar Spring Boot")
         String title,
 
-        @Schema(description = "Descrição detalhada da tarefa", example = "Revisar as anotações do Swagger e aplicar no controller")
+        @Schema(description = "Descrição detalhada da tarefa", example = "Revisar as anotações do Swagger")
         String description,
 
         @Schema(description = "Status atual da tarefa", example = "PENDING")
@@ -32,9 +34,6 @@ public record TaskResponseDTO(
         @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss")
         LocalDateTime dueDate,
 
-        @Schema(description = "Porcentagem de conclusão baseada nas subtarefas", example = "75.00")
-        BigDecimal progress,
-
         @Schema(description = "Instante em que o registro foi criado", example = "2026-05-07T14:30:00Z")
         @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss'Z'", timezone = "UTC")
         Instant createdAt,
@@ -42,9 +41,6 @@ public record TaskResponseDTO(
         @Schema(description = "Instante em que o registro foi atualizado pela última vez", example = "2026-05-07T14:30:00Z")
         @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss'Z'", timezone = "UTC")
         Instant updatedAt,
-
-        @Schema(description = "Lista de subtarefas associadas")
-        List<SubtaskResponseDTO> subtasks,
 
         @Schema(description = "Lista de tags associadas")
         Set<TagResponseDTO> tags
