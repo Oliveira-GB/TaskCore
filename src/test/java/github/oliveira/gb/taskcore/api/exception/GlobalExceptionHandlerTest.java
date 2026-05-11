@@ -34,7 +34,7 @@ class GlobalExceptionHandlerTest {
 
         ResponseEntity<ErrorResponseDTO> response = handler.handleBusinessRuleException(exception, request);
 
-        Assertions.assertThat(response.getStatusCode()).isEqualTo(HttpStatus.UNPROCESSABLE_CONTENT); 
+        Assertions.assertThat(response.getStatusCode()).isEqualTo(HttpStatus.UNPROCESSABLE_ENTITY); 
 
         ErrorResponseDTO body = response.getBody();
         Assertions.assertThat(body).isNotNull();
