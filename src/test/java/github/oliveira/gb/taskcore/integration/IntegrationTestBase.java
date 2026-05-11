@@ -2,37 +2,43 @@ package github.oliveira.gb.taskcore.integration;
 
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.testcontainers.service.connection.ServiceConnection;
 import org.springframework.test.context.ActiveProfiles;
-import org.springframework.test.context.DynamicPropertyRegistry;
-import org.springframework.test.context.DynamicPropertySource;
-import org.springframework.test.context.TestPropertySource;
 import org.testcontainers.containers.PostgreSQLContainer;
-import org.testcontainers.junit.jupiter.Container;
-import org.testcontainers.junit.jupiter.Testcontainers;
 
+/**
+ * Base class for integration tests using Testcontainers Singleton pattern.
+ * <p>
+ * This class provides a single PostgreSQL container instance shared across all integration tests,
+ * preventing the "Connection refused" error caused by Spring Context Caching vs Testcontainers lifecycle mismatch.
+ * <p>
+ * The container is initialized only once (static singleton) and reused throughout the entire test suite,
+ * significantly improving test execution speed and reliability.
+ *
+ * @see <a href="https://spring.io/blog/2023/06/23/improved-testcontainers-support-in-spring-boot-3-1">Spring Boot 3.1 Testcontainers Support</a>
+ */
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
-@Testcontainers
 @AutoConfigureMockMvc
 @ActiveProfiles("integration")
-@TestPropertySource(properties = {
-    "spring.datasource.driver-class-name=org.postgresql.Driver",
-    "spring.jpa.database-platform=org.hibernate.dialect.PostgreSQLDialect"
-})
 public abstract class IntegrationTestBase {
 
-    @Container
+    /**
+     * Singleton PostgreSQL container instance.
+     * <p>
+     * Marked with {@code @ServiceConnection} to automatically configure Spring's datasource
+     * with the container's connection details (URL, username, password).
+     * <p>
+     * The container is started once and shared across all test classes extending this base class.
+     */
+    @ServiceConnection
     static final PostgreSQLContainer<?> postgres = new PostgreSQLContainer<>("postgres:16-alpine")
             .withDatabaseName("taskcore_test")
             .withUsername("test")
-            .withPassword("test");
+            .withPassword("test")
+            .withReuse(true);
 
-    @DynamicPropertySource
-    static void configureProperties(DynamicPropertyRegistry registry) {
-        registry.add("spring.datasource.url", postgres::getJdbcUrl);
-        registry.add("spring.datasource.username", postgres::getUsername);
-        registry.add("spring.datasource.password", postgres::getPassword);
-        registry.add("spring.flyway.url", postgres::getJdbcUrl);
-        registry.add("spring.flyway.user", postgres::getUsername);
-        registry.add("spring.flyway.password", postgres::getPassword);
+    // Static block to ensure container starts before any test runs
+    static {
+        postgres.start();
     }
 }
