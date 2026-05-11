@@ -59,6 +59,9 @@ public class Task extends BaseEntity {
     @OneToMany(mappedBy = "task", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Subtask> subtasks = new ArrayList<>();
 
+    @OneToMany(mappedBy = "task", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
+    private List<TaskNote> notes = new ArrayList<>();
+
     @ManyToMany(cascade = {CascadeType.PERSIST, CascadeType.MERGE})
     @JoinTable(
             name = "tasks_tags",
@@ -75,6 +78,16 @@ public class Task extends BaseEntity {
     public void removeSubtask(Subtask subtask) {
         this.subtasks.remove(subtask);
         subtask.setTask(null);
+    }
+
+    public void addNote(TaskNote note) {
+        this.notes.add(note);
+        note.setTask(this);
+    }
+
+    public void removeNote(TaskNote note) {
+        this.notes.remove(note);
+        note.setTask(null);
     }
 
     public void addTag(Tag tag) {

@@ -2,16 +2,15 @@ package github.oliveira.gb.taskcore.api.mapper;
 
 import github.oliveira.gb.taskcore.api.dto.request.TaskRequestDTO;
 import github.oliveira.gb.taskcore.api.dto.response.TagResponseDTO;
+import github.oliveira.gb.taskcore.api.dto.response.TaskNoteResponseDTO;
 import github.oliveira.gb.taskcore.api.dto.response.TaskResponseDTO;
 import github.oliveira.gb.taskcore.api.dto.response.TaskSummaryResponseDTO;
-import github.oliveira.gb.taskcore.domain.model.Subtask;
-import github.oliveira.gb.taskcore.domain.model.Tag;
-import github.oliveira.gb.taskcore.domain.model.Task;
-import github.oliveira.gb.taskcore.domain.model.TaskStatus;
+import github.oliveira.gb.taskcore.domain.model.*;
 import org.mapstruct.*;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.util.Collections;
 import java.util.List;
 
 @Mapper(componentModel = "spring", unmappedTargetPolicy = ReportingPolicy.IGNORE)
@@ -21,6 +20,7 @@ public interface TaskMapper {
     Task toEntity(TaskRequestDTO requestDTO);
 
     @Mapping(target = "progress", expression = "java(calculateProgress(task))")
+    @Mapping(target = "notes", expression = "java(toNoteResponseDTOList(task.getNotes()))")
     TaskResponseDTO toResponseDTO(Task task);
 
     TaskSummaryResponseDTO toSummaryResponseDTO(Task task);
@@ -67,5 +67,28 @@ public interface TaskMapper {
         return BigDecimal.valueOf(completed)
                 .multiply(BigDecimal.valueOf(100))
                 .divide(BigDecimal.valueOf(total), 2, RoundingMode.HALF_UP);
+    }
+
+    /**
+     * Converts a TaskNote entity to TaskNoteResponseDTO.
+     *
+     * @param note the task note entity
+     * @return TaskNoteResponseDTO
+     */
+    TaskNoteResponseDTO toNoteResponseDTO(TaskNote note);
+
+    /**
+     * Converts a list of TaskNote entities to a list of TaskNoteResponseDTOs.
+     *
+     * @param notes list of task note entities
+     * @return list of TaskNoteResponseDTOs
+     */
+    default List<TaskNoteResponseDTO> toNoteResponseDTOList(List<TaskNote> notes) {
+        if (notes == null) {
+            return Collections.emptyList();
+        }
+        return notes.stream()
+                .map(this::toNoteResponseDTO)
+                .toList();
     }
 }

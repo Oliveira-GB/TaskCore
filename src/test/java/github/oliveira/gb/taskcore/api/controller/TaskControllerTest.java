@@ -79,6 +79,7 @@ class TaskControllerTest {
                 Instant.now(),
                 Instant.now(),
                 Collections.emptyList(),
+                Collections.emptyList(),
                 Collections.emptySet()
         );
     }

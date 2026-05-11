@@ -9,7 +9,7 @@ import java.util.Optional;
 
 public interface TaskRepository extends JpaRepository<Task, Long>, JpaSpecificationExecutor<Task> {
 
-    @EntityGraph(attributePaths = {"subtasks", "tags"})
+    @EntityGraph(attributePaths = {"subtasks", "tags", "notes"})
     Optional<Task> findById(Long id);
 
     @EntityGraph(attributePaths = {"subtasks", "tags"})

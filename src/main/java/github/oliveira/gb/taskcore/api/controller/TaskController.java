@@ -1,8 +1,10 @@
 package github.oliveira.gb.taskcore.api.controller;
 
 import github.oliveira.gb.taskcore.api.dto.request.TaskFilter;
+import github.oliveira.gb.taskcore.api.dto.request.TaskNoteRequestDTO;
 import github.oliveira.gb.taskcore.api.dto.request.TaskRequestDTO;
 import github.oliveira.gb.taskcore.api.dto.request.TaskStatusUpdateRequestDTO;
+import github.oliveira.gb.taskcore.api.dto.response.TaskNoteResponseDTO;
 import github.oliveira.gb.taskcore.api.dto.response.TaskResponseDTO;
 import github.oliveira.gb.taskcore.api.dto.response.TaskSummaryResponseDTO;
 import github.oliveira.gb.taskcore.api.exception.ErrorResponseDTO;
@@ -112,7 +114,7 @@ public class TaskController implements GenericHeaderLocation {
     @Operation(summary = "Listar tarefas com filtros e paginação", description = "Retorna uma lista paginada de tarefas. " +
             "Permite filtrar opcionalmente por texto (título/descrição), status e prioridade. " +
             "O padrão é retornar 10 itens por página, ordenados pela data de criação. " +
-            "Nota: Este endpoint retorna um resumo sem o campo de progresso para evitar problemas de performance.")
+            "Nota: Este endpoint retorna um resumo sem o campo de progresso e sem notas para evitar problemas de performance.")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Lista de tarefas retornada com sucesso")
     })
@@ -123,5 +125,30 @@ public class TaskController implements GenericHeaderLocation {
     ) {
         Page<TaskSummaryResponseDTO> response = taskService.findAll(filter, pageable);
         return ResponseEntity.ok(response);
+    }
+
+    @Operation(summary = "Adicionar nota à tarefa", description = "Cria uma nova nota associada à tarefa especificada. " +
+            "Notes são create-only e não podem ser editadas após a criação.")
+    @ApiResponse(responseCode = "201", description = "Nota criada com sucesso")
+    @ApiResponse(responseCode = "404", description = "Tarefa não encontrada")
+    @ApiResponse(responseCode = "400", description = "Dados inválidos - conteúdo vazio ou excede 1000 caracteres")
+    @PostMapping("/{id}/notes")
+    public ResponseEntity<TaskNoteResponseDTO> addNote(
+            @PathVariable Long id,
+            @RequestBody @Valid TaskNoteRequestDTO dto) {
+        TaskNoteResponseDTO note = taskService.addNoteToTask(id, dto);
+        return ResponseEntity.status(201).body(note);
+    }
+
+    @Operation(summary = "Remover nota da tarefa", description = "Realiza a exclusão lógica (soft delete) da nota. " +
+            "A nota não será mais visível mas permanece no banco para fins de auditoria.")
+    @ApiResponse(responseCode = "204", description = "Nota removida com sucesso")
+    @ApiResponse(responseCode = "404", description = "Tarefa ou nota não encontrada")
+    @DeleteMapping("/{id}/notes/{noteId}")
+    public ResponseEntity<Void> removeNote(
+            @PathVariable Long id,
+            @PathVariable Long noteId) {
+        taskService.removeNoteFromTask(id, noteId);
+        return ResponseEntity.noContent().build();
     }
 }
