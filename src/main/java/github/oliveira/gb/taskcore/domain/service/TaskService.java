@@ -61,6 +61,7 @@ public class TaskService {
 
         taskValidator.validateUpdate(taskEntity, dto);
         taskMapper.updateEntityFromDto(dto, taskEntity);
+        taskEntity.setPriority(dto.priority() != null ? dto.priority() : TaskPriority.MEDIUM);
         taskEntity.setTags(mapTags(dto.tags()));
 
         taskRepository.save(taskEntity);
