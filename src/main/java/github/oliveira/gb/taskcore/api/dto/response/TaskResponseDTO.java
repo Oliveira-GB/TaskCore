@@ -46,6 +46,9 @@ public record TaskResponseDTO(
         @Schema(description = "Lista de subtarefas associadas")
         List<SubtaskResponseDTO> subtasks,
 
+        @Schema(description = "Lista de notas associadas à tarefa")
+        List<TaskNoteResponseDTO> notes,
+
         @Schema(description = "Lista de tags associadas")
         Set<TagResponseDTO> tags
 ) {}

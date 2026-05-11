@@ -1,14 +1,17 @@
 package github.oliveira.gb.taskcore.domain.service;
 
 import github.oliveira.gb.taskcore.api.dto.request.TaskFilter;
+import github.oliveira.gb.taskcore.api.dto.request.TaskNoteRequestDTO;
 import github.oliveira.gb.taskcore.api.dto.request.TaskRequestDTO;
 import github.oliveira.gb.taskcore.api.dto.request.TaskStatusUpdateRequestDTO;
+import github.oliveira.gb.taskcore.api.dto.response.TaskNoteResponseDTO;
 import github.oliveira.gb.taskcore.api.dto.response.TaskResponseDTO;
 import github.oliveira.gb.taskcore.api.dto.response.TaskSummaryResponseDTO;
 import github.oliveira.gb.taskcore.api.exception.TaskNotFoundException;
 import github.oliveira.gb.taskcore.api.mapper.TaskMapper;
 import github.oliveira.gb.taskcore.domain.model.Tag;
 import github.oliveira.gb.taskcore.domain.model.Task;
+import github.oliveira.gb.taskcore.domain.model.TaskNote;
 import github.oliveira.gb.taskcore.domain.model.TaskPriority;
 import github.oliveira.gb.taskcore.domain.model.TaskStatus;
 import github.oliveira.gb.taskcore.domain.repository.TagRepository;
@@ -156,5 +159,46 @@ public class TaskService {
                             return tagRepository.save(newTag);
                         }))
                 .collect(Collectors.toSet());
+    }
+
+    /**
+     * Adds a note to a task.
+     * Notes are create-only and cannot be edited after creation.
+     *
+     * @param taskId the task ID
+     * @param dto    the note request
+     * @return TaskNoteResponseDTO with the created note
+     */
+    @Transactional
+    public TaskNoteResponseDTO addNoteToTask(Long taskId, TaskNoteRequestDTO dto) {
+        Task task = taskRepository.findById(taskId)
+                .orElseThrow(() -> new TaskNotFoundException("Task with ID " + taskId + " not found"));
+
+        TaskNote note = new TaskNote();
+        note.setContent(dto.content());
+        task.addNote(note);
+
+        taskRepository.save(task);
+        return taskMapper.toNoteResponseDTO(note);
+    }
+
+    /**
+     * Removes a note from a task (soft delete).
+     *
+     * @param taskId the task ID
+     * @param noteId the note ID
+     */
+    @Transactional
+    public void removeNoteFromTask(Long taskId, Long noteId) {
+        Task task = taskRepository.findById(taskId)
+                .orElseThrow(() -> new TaskNotFoundException("Task with ID " + taskId + " not found"));
+
+        TaskNote note = task.getNotes().stream()
+                .filter(n -> n.getId().equals(noteId))
+                .findFirst()
+                .orElseThrow(() -> new TaskNotFoundException("Note with ID " + noteId + " not found for task " + taskId));
+
+        task.removeNote(note);
+        taskRepository.save(task);
     }
 }
