@@ -50,7 +50,6 @@ public class Task extends BaseEntity {
     private TaskPriority priority = TaskPriority.MEDIUM;
 
     @Column(name = "due_date")
-    @FutureOrPresent(message = "Every date must have a due date in the present or future!")
     private LocalDateTime dueDate;
 
     @Column(name = "active", nullable = false)
