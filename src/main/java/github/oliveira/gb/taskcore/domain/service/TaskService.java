@@ -25,6 +25,7 @@ import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Clock;
 import java.util.Collections;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -37,6 +38,7 @@ public class TaskService {
     private final TagRepository tagRepository;
     private final TaskMapper taskMapper;
     private final TaskValidator taskValidator;
+    private final Clock clock;
 
     @Transactional
     public TaskResponseDTO createTask(TaskRequestDTO taskRequestDTO) {
@@ -140,6 +142,10 @@ public class TaskService {
 
         if (filter.priority() != null) {
             spec = spec.and(TaskSpecification.hasPriority(filter.priority()));
+        }
+
+        if (filter.deadline() != null) {
+            spec = spec.and(TaskSpecification.hasDeadlineFilter(clock, filter.deadline()));
         }
 
         // Filter for archived tasks - hide archived by default unless includeArchived is true

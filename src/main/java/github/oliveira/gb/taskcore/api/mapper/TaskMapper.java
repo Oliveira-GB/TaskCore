@@ -33,6 +33,7 @@ public interface TaskMapper {
     @Mapping(target = "createdAt", ignore = true)
     @Mapping(target = "updatedAt", ignore = true)
     @Mapping(target = "tags", ignore = true)
+    @Mapping(target = "archived", ignore = true)
     void updateEntityFromDto(TaskRequestDTO dto, @MappingTarget Task entity);
 
     @AfterMapping

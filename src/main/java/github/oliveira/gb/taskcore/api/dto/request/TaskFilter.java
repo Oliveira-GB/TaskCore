@@ -1,5 +1,6 @@
 package github.oliveira.gb.taskcore.api.dto.request;
 
+import github.oliveira.gb.taskcore.domain.model.DeadlineFilter;
 import github.oliveira.gb.taskcore.domain.model.TaskPriority;
 import github.oliveira.gb.taskcore.domain.model.TaskStatus;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -20,6 +21,9 @@ public record TaskFilter(
         @Schema(description = "Filtra pelo nível de prioridade", example = "HIGH")
         TaskPriority priority,
 
-        @Schema(description = "Incluir tarefas arquivadas na listagem", example = "false")
+        @Schema(description = "Filtro inteligente por deadline (OVERDUE, TODAY, THIS_WEEK)", example = "TODAY")
+        DeadlineFilter deadline,
+
+        @Schema(description = "Incluir tarefas arquivadas na busca", example = "false")
         Boolean includeArchived
 ) {}

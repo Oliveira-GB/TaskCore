@@ -293,7 +293,7 @@ class TaskServiceTest {
     @Test
     @DisplayName("Should return a paginated list of TaskSummaryResponseDTO when findAll is called")
     void findAll_ShouldReturnPagedTaskSummaryResponseDTO_WhenSuccessful() {
-        TaskFilter filter = new TaskFilter("Update", TaskStatus.PENDING, Set.of("tech"), null, null);
+        TaskFilter filter = new TaskFilter("Update", TaskStatus.PENDING, Set.of("tech"), null, null, null);
         Pageable pageable = PageRequest.of(0, 10);
         Page<Task> taskPage = new PageImpl<>(List.of(taskEntity));
 
