@@ -603,11 +603,11 @@ class TaskControllerIntegrationTest extends IntegrationTestBase {
     @Test
     @DisplayName("E2E: Should filter tasks by deadline=TODAY and return 200 OK")
     void shouldFilterTasksByDeadlineToday() throws Exception {
-        // Create a task due today
+        // Create a task due today (in future hours to avoid validation issues)
         TaskRequestDTO todayTask = new TaskRequestDTO(
                 "Task Due Today",
                 "Description",
-                LocalDateTime.now(),
+                LocalDateTime.now().plusHours(1),
                 Collections.emptyList(),
                 Collections.emptySet(),
                 null,
@@ -618,7 +618,7 @@ class TaskControllerIntegrationTest extends IntegrationTestBase {
         TaskRequestDTO tomorrowTask = new TaskRequestDTO(
                 "Task Due Tomorrow",
                 "Description",
-                LocalDateTime.now().plusDays(1),
+                LocalDateTime.now().plusDays(1).plusHours(1),
                 Collections.emptyList(),
                 Collections.emptySet(),
                 null,
