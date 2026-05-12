@@ -138,4 +138,44 @@ class TaskSpecificationTest {
 
         Assertions.assertThat(result).isEqualTo(equalPredicate);
     }
+
+    @Test
+    @DisplayName("isArchived: Deve criar predicate archived = false quando includeArchived for false")
+    @SuppressWarnings("unchecked")
+    void shouldCreateIsArchivedFalseSpecification() {
+        Path<Object> archivedPath = mock(Path.class);
+        Predicate falsePredicate = mock(Predicate.class);
+
+        given(root.get("archived")).willReturn(archivedPath);
+        given(criteriaBuilder.equal(archivedPath, false)).willReturn(falsePredicate);
+
+        Specification<Task> spec = TaskSpecification.isArchived(false);
+        Predicate result = spec.toPredicate(root, query, criteriaBuilder);
+
+        Assertions.assertThat(result).isEqualTo(falsePredicate);
+    }
+
+    @Test
+    @DisplayName("isArchived: Deve retornar null quando includeArchived for true")
+    void shouldReturnNullWhenIncludeArchivedIsTrue() {
+        Specification<Task> spec = TaskSpecification.isArchived(true);
+        Predicate result = spec.toPredicate(root, query, criteriaBuilder);
+        Assertions.assertThat(result).isNull();
+    }
+
+    @Test
+    @DisplayName("isArchived: Deve criar predicate archived = false quando includeArchived for null")
+    @SuppressWarnings("unchecked")
+    void shouldCreateIsArchivedFalseWhenIncludeArchivedIsNull() {
+        Path<Object> archivedPath = mock(Path.class);
+        Predicate falsePredicate = mock(Predicate.class);
+
+        given(root.get("archived")).willReturn(archivedPath);
+        given(criteriaBuilder.equal(archivedPath, false)).willReturn(falsePredicate);
+
+        Specification<Task> spec = TaskSpecification.isArchived(null);
+        Predicate result = spec.toPredicate(root, query, criteriaBuilder);
+
+        Assertions.assertThat(result).isEqualTo(falsePredicate);
+    }
 }

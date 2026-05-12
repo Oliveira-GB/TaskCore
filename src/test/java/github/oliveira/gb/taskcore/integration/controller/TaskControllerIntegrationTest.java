@@ -43,6 +43,7 @@ class TaskControllerIntegrationTest extends IntegrationTestBase {
                 LocalDateTime.now().plusDays(2),
                 Collections.emptyList(),
                 Collections.emptySet(),
+                null,
                 null
         );
     }
@@ -70,6 +71,7 @@ class TaskControllerIntegrationTest extends IntegrationTestBase {
                 LocalDateTime.now().plusDays(2),
                 Collections.emptyList(),
                 Collections.emptySet(),
+                null,
                 null
         );
 
@@ -90,6 +92,7 @@ class TaskControllerIntegrationTest extends IntegrationTestBase {
                 LocalDateTime.now().minusDays(1),
                 Collections.emptyList(),
                 Collections.emptySet(),
+                null,
                 null
         );
 
@@ -109,6 +112,7 @@ class TaskControllerIntegrationTest extends IntegrationTestBase {
                 LocalDateTime.now().plusDays(2),
                 Collections.emptyList(),
                 Collections.emptySet(),
+                null,
                 null
         );
 
@@ -128,6 +132,7 @@ class TaskControllerIntegrationTest extends IntegrationTestBase {
                 LocalDateTime.now().plusDays(5),
                 Collections.emptyList(),
                 Collections.emptySet(),
+                null,
                 null
         );
 
@@ -164,6 +169,7 @@ class TaskControllerIntegrationTest extends IntegrationTestBase {
                 LocalDateTime.now().plusDays(5),
                 Collections.emptyList(),
                 Collections.emptySet(),
+                null,
                 null
         );
 
@@ -181,6 +187,7 @@ class TaskControllerIntegrationTest extends IntegrationTestBase {
                 LocalDateTime.now().plusDays(10),
                 Collections.emptyList(),
                 Collections.emptySet(),
+                null,
                 null
         );
 
@@ -201,6 +208,7 @@ class TaskControllerIntegrationTest extends IntegrationTestBase {
                 LocalDateTime.now().plusDays(10),
                 Collections.emptyList(),
                 Collections.emptySet(),
+                null,
                 null
         );
 
@@ -220,6 +228,7 @@ class TaskControllerIntegrationTest extends IntegrationTestBase {
                 LocalDateTime.now().plusDays(5),
                 Collections.emptyList(),
                 Collections.emptySet(),
+                null,
                 null
         );
 
@@ -257,6 +266,7 @@ class TaskControllerIntegrationTest extends IntegrationTestBase {
                     LocalDateTime.now().plusDays(i + 1),
                     Collections.emptyList(),
                     Collections.emptySet(),
+                    null,
                     null
             );
             mockMvc.perform(post(baseUrl)
@@ -283,7 +293,8 @@ class TaskControllerIntegrationTest extends IntegrationTestBase {
                 LocalDateTime.now().plusDays(5),
                 Collections.emptyList(),
                 Collections.emptySet(),
-                TaskPriority.HIGH
+                TaskPriority.HIGH,
+                null
         );
 
         mockMvc.perform(post(baseUrl)
@@ -322,7 +333,8 @@ class TaskControllerIntegrationTest extends IntegrationTestBase {
                 LocalDateTime.now().plusDays(5),
                 Collections.emptyList(),
                 Collections.emptySet(),
-                TaskPriority.LOW
+                TaskPriority.LOW,
+                null
         );
 
         MvcResult createResult = mockMvc.perform(post(baseUrl)
@@ -339,7 +351,8 @@ class TaskControllerIntegrationTest extends IntegrationTestBase {
                 LocalDateTime.now().plusDays(5),
                 Collections.emptyList(),
                 Collections.emptySet(),
-                TaskPriority.CRITICAL
+                TaskPriority.CRITICAL,
+                null
         );
 
         mockMvc.perform(put(baseUrl + "/{id}", taskId)
@@ -359,7 +372,8 @@ class TaskControllerIntegrationTest extends IntegrationTestBase {
                 LocalDateTime.now().plusDays(5),
                 Collections.emptyList(),
                 Collections.emptySet(),
-                TaskPriority.HIGH
+                TaskPriority.HIGH,
+                null
         );
 
         TaskRequestDTO mediumPriorityRequest = new TaskRequestDTO(
@@ -368,7 +382,8 @@ class TaskControllerIntegrationTest extends IntegrationTestBase {
                 LocalDateTime.now().plusDays(5),
                 Collections.emptyList(),
                 Collections.emptySet(),
-                TaskPriority.MEDIUM
+                TaskPriority.MEDIUM,
+                null
         );
 
         mockMvc.perform(post(baseUrl)
@@ -523,6 +538,7 @@ class TaskControllerIntegrationTest extends IntegrationTestBase {
                 LocalDateTime.now().plusDays(5),
                 Collections.emptyList(),
                 Collections.emptySet(),
+                null,
                 null
         );
 
@@ -551,6 +567,7 @@ class TaskControllerIntegrationTest extends IntegrationTestBase {
                 LocalDateTime.now().plusDays(5),
                 Collections.emptyList(),
                 Collections.emptySet(),
+                null,
                 null
         );
 

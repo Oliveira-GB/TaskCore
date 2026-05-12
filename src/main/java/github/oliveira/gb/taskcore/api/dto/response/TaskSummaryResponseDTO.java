@@ -30,6 +30,9 @@ public record TaskSummaryResponseDTO(
         @Schema(description = "Nível de prioridade da tarefa", example = "HIGH")
         TaskPriority priority,
 
+        @Schema(description = "Indica se a tarefa está arquivada", example = "false")
+        Boolean archived,
+
         @Schema(description = "Data limite para a conclusão da tarefa", example = "2026-12-31T23:59:59")
         @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss")
         LocalDateTime dueDate,

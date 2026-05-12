@@ -65,6 +65,7 @@ class TaskControllerTest {
                 LocalDateTime.now().plusDays(2),
                 Collections.emptyList(),
                 Collections.emptySet(),
+                null,
                 null
         );
 
@@ -74,6 +75,7 @@ class TaskControllerTest {
                 "Review Swagger annotations and apply to controller",
                 TaskStatus.PENDING,
                 TaskPriority.MEDIUM,
+                false,
                 LocalDateTime.now().plusDays(2),
                 java.math.BigDecimal.ZERO,
                 Instant.now(),
@@ -123,6 +125,7 @@ class TaskControllerTest {
                 LocalDateTime.now().minusDays(1),
                 Collections.emptyList(),
                 Collections.emptySet(),
+                null,
                 null
         );
 
@@ -224,6 +227,7 @@ class TaskControllerTest {
                 LocalDateTime.now().minusDays(1),
                 Collections.emptyList(),
                 Collections.emptySet(),
+                null,
                 null
         );
 
@@ -320,6 +324,7 @@ class TaskControllerTest {
                 taskResponseDTO.description(),
                 taskResponseDTO.status(),
                 taskResponseDTO.priority(),
+                taskResponseDTO.archived(),
                 taskResponseDTO.dueDate(),
                 taskResponseDTO.createdAt(),
                 taskResponseDTO.updatedAt(),

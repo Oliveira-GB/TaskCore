@@ -46,4 +46,13 @@ public class TaskSpecification {
         return (root, query, criteriaBuilder) ->
                 priority == null ? null : criteriaBuilder.equal(root.get("priority"), priority);
     }
+
+    public static Specification<Task> isArchived(Boolean includeArchived) {
+        return (root, query, criteriaBuilder) -> {
+            if (includeArchived == null || !includeArchived) {
+                return criteriaBuilder.equal(root.get("archived"), false);
+            }
+            return null;
+        };
+    }
 }

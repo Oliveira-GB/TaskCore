@@ -17,6 +17,7 @@ import java.util.List;
 public interface TaskMapper {
 
     @Mapping(target = "tags", ignore = true)
+    @Mapping(target = "archived", expression = "java(requestDTO.archived() != null ? requestDTO.archived() : Boolean.FALSE)")
     Task toEntity(TaskRequestDTO requestDTO);
 
     @Mapping(target = "progress", expression = "java(calculateProgress(task))")
@@ -38,6 +39,13 @@ public interface TaskMapper {
     default void linkSubtasks(@MappingTarget Task task) {
         if (task.getSubtasks() != null) {
             task.getSubtasks().forEach(subtask -> subtask.setTask(task));
+        }
+    }
+
+    @AfterMapping
+    default void updateArchivedField(TaskRequestDTO dto, @MappingTarget Task entity) {
+        if (dto.archived() != null) {
+            entity.setArchived(dto.archived());
         }
     }
 

@@ -18,5 +18,8 @@ public record TaskFilter(
         Set<String> tags,
 
         @Schema(description = "Filtra pelo nível de prioridade", example = "HIGH")
-        TaskPriority priority
+        TaskPriority priority,
+
+        @Schema(description = "Incluir tarefas arquivadas na listagem", example = "false")
+        Boolean includeArchived
 ) {}

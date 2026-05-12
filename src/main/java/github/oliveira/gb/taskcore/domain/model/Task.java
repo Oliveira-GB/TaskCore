@@ -56,6 +56,9 @@ public class Task extends BaseEntity {
     @Column(name = "active", nullable = false)
     private Boolean active = Boolean.TRUE;
 
+    @Column(name = "archived", nullable = false)
+    private Boolean archived = Boolean.FALSE;
+
     @OneToMany(mappedBy = "task", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Subtask> subtasks = new ArrayList<>();
 

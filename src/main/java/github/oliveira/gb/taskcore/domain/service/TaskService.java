@@ -142,6 +142,11 @@ public class TaskService {
             spec = spec.and(TaskSpecification.hasPriority(filter.priority()));
         }
 
+        // Filter for archived tasks - hide archived by default unless includeArchived is true
+        if (filter.includeArchived() == null || !filter.includeArchived()) {
+            spec = spec.and(TaskSpecification.isArchived(false));
+        }
+
         return taskRepository.findAll(spec, pageable)
                 .map(taskMapper::toSummaryResponseDTO);
     }

@@ -34,5 +34,8 @@ public record TaskRequestDTO(
         Set<String> tags,
 
         @Schema(description = "Nível de prioridade da tarefa", example = "HIGH")
-        TaskPriority priority
+        TaskPriority priority,
+
+        @Schema(description = "Indica se a tarefa está arquivada", example = "false")
+        Boolean archived
 ) {}
