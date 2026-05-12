@@ -34,6 +34,7 @@ class TaskMapperTest {
                 LocalDateTime.now().plusDays(5),
                 List.of(subtaskDto),
                 Set.of("backend"),
+                null,
                 null
         );
 
@@ -89,6 +90,7 @@ class TaskMapperTest {
                 null,
                 null,
                 null,
+                null,
                 null
         );
 
@@ -108,6 +110,7 @@ class TaskMapperTest {
                 null,
                 null,
                 List.of(subtaskDto),
+                null,
                 null,
                 null
         );
@@ -138,6 +141,7 @@ class TaskMapperTest {
                 LocalDateTime.now().plusDays(2),
                 null,
                 Set.of("hacked-tag"),
+                null,
                 null
         );
 
@@ -164,6 +168,7 @@ class TaskMapperTest {
                 null,
                 null,
                 Set.of("tag1", "tag2"),
+                null,
                 null
         );
         

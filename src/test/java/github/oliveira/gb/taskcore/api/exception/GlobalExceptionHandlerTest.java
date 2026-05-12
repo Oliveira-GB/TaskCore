@@ -11,6 +11,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 
 import static org.mockito.BDDMockito.given;
 
@@ -104,5 +105,53 @@ class GlobalExceptionHandlerTest {
         );
         Assertions.assertThat(body.path()).isEqualTo(requestUri);
         Assertions.assertThat(body.timestamp()).isNotNull();
+    }
+
+    @Test
+    @DisplayName("Caminho Feliz: Deve mapear MethodArgumentTypeMismatchException para 400 Bad Request")
+    void shouldHandleMethodArgumentTypeMismatchException() {
+        String requestUri = "/api/v1/tasks";
+        String parameterName = "deadline";
+        String invalidValue = "INVALID_FILTER";
+
+        MethodArgumentTypeMismatchException exception = org.mockito.Mockito.mock(MethodArgumentTypeMismatchException.class);
+        given(exception.getName()).willReturn(parameterName);
+        given(exception.getValue()).willReturn(invalidValue);
+        given(exception.getRequiredType()).willReturn(null);
+        given(request.getRequestURI()).willReturn(requestUri);
+
+        ResponseEntity<ErrorResponseDTO> response = handler.handleMethodArgumentTypeMismatchException(exception, request);
+
+        Assertions.assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+
+        ErrorResponseDTO body = response.getBody();
+        Assertions.assertThat(body).isNotNull();
+        Assertions.assertThat(body.status()).isEqualTo(400);
+        Assertions.assertThat(body.error()).isEqualTo("Bad Request");
+        Assertions.assertThat(body.messages().get(0)).contains("Invalid value for deadline");
+        Assertions.assertThat(body.path()).isEqualTo(requestUri);
+        Assertions.assertThat(body.timestamp()).isNotNull();
+    }
+
+    @Test
+    @DisplayName("Deve incluir valores permitidos no erro quando o tipo for enum")
+    void shouldIncludeEnumValuesInErrorMessage() {
+        String requestUri = "/api/v1/tasks";
+        String parameterName = "deadline";
+        String invalidValue = "INVALID";
+
+        MethodArgumentTypeMismatchException exception = org.mockito.Mockito.mock(MethodArgumentTypeMismatchException.class);
+        given(exception.getName()).willReturn(parameterName);
+        given(exception.getValue()).willReturn(invalidValue);
+        org.mockito.Mockito.<Class<?>>when(exception.getRequiredType()).thenReturn(github.oliveira.gb.taskcore.domain.model.DeadlineFilter.class);
+        given(request.getRequestURI()).willReturn(requestUri);
+
+        ResponseEntity<ErrorResponseDTO> response = handler.handleMethodArgumentTypeMismatchException(exception, request);
+
+        Assertions.assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+
+        ErrorResponseDTO body = response.getBody();
+        Assertions.assertThat(body).isNotNull();
+        Assertions.assertThat(body.messages().get(0)).contains("OVERDUE", "TODAY", "THIS_WEEK");
     }
 }

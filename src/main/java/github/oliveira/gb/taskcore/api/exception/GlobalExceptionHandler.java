@@ -7,6 +7,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 
 import java.time.Instant;
 import java.util.List;
@@ -52,5 +53,33 @@ public class GlobalExceptionHandler {
                 request.getRequestURI()
         );
         return ResponseEntity.status(HttpStatus.NOT_FOUND).body(error);
+    }
+
+    @ExceptionHandler(MethodArgumentTypeMismatchException.class)
+    public ResponseEntity<ErrorResponseDTO> handleMethodArgumentTypeMismatchException(
+            MethodArgumentTypeMismatchException ex, HttpServletRequest request) {
+
+        String message = ex.getRequiredType() != null && ex.getRequiredType().isEnum()
+                ? "Invalid value for " + ex.getName() + ": '" + ex.getValue() + "'. Allowed values are: " + getEnumValues(ex.getRequiredType())
+                : "Invalid value for " + ex.getName() + ": '" + ex.getValue() + "'";
+
+        ErrorResponseDTO error = new ErrorResponseDTO(
+                Instant.now(),
+                HttpStatus.BAD_REQUEST.value(),
+                "Bad Request",
+                List.of(message),
+                request.getRequestURI()
+        );
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
+    }
+
+    private String getEnumValues(Class<?> enumClass) {
+        Object[] enumConstants = enumClass.getEnumConstants();
+        if (enumConstants == null) {
+            return "";
+        }
+        return String.join(", ", java.util.Arrays.stream(enumConstants)
+                .map(Object::toString)
+                .toList());
     }
 }

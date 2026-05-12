@@ -1,5 +1,6 @@
 package github.oliveira.gb.taskcore.domain.repository.specification;
 
+import github.oliveira.gb.taskcore.domain.model.DeadlineFilter;
 import github.oliveira.gb.taskcore.domain.model.Task;
 import github.oliveira.gb.taskcore.domain.model.TaskPriority;
 import github.oliveira.gb.taskcore.domain.model.TaskStatus;
@@ -16,6 +17,11 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.jpa.domain.Specification;
+
+import java.time.Clock;
+import java.time.Instant;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
 
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
@@ -137,5 +143,133 @@ class TaskSpecificationTest {
         Predicate result = spec.toPredicate(root, query, criteriaBuilder);
 
         Assertions.assertThat(result).isEqualTo(equalPredicate);
+    }
+
+    @Test
+    @DisplayName("hasDeadlineFilter: Deve retornar null quando deadlineFilter for nulo")
+    void shouldReturnNullWhenDeadlineFilterIsNull() {
+        Clock fixedClock = Clock.fixed(Instant.parse("2024-06-15T12:00:00Z"), ZoneId.of("UTC"));
+
+        Specification<Task> spec = TaskSpecification.hasDeadlineFilter(fixedClock, null);
+        Predicate result = spec.toPredicate(root, query, criteriaBuilder);
+
+        Assertions.assertThat(result).isNull();
+    }
+
+    @Test
+    @DisplayName("hasDeadlineFilter OVERDUE: Deve criar predicates corretos")
+    @SuppressWarnings("unchecked")
+    void shouldCreateOverduePredicate() {
+        LocalDateTime fixedNow = LocalDateTime.of(2024, 6, 15, 12, 0);
+        Clock fixedClock = Clock.fixed(fixedNow.atZone(ZoneId.of("UTC")).toInstant(), ZoneId.of("UTC"));
+
+        Path<LocalDateTime> dueDatePath = mock(Path.class);
+        Path<TaskStatus> statusPath = mock(Path.class);
+        Predicate lessThanPredicate = mock(Predicate.class);
+        Predicate notEqualPredicate = mock(Predicate.class);
+        Predicate isNotNullPredicate = mock(Predicate.class);
+        Predicate andPredicate = mock(Predicate.class);
+
+        given(root.<LocalDateTime>get("dueDate")).willReturn(dueDatePath);
+        given(root.<TaskStatus>get("status")).willReturn(statusPath);
+        given(criteriaBuilder.lessThan(dueDatePath, fixedNow)).willReturn(lessThanPredicate);
+        given(criteriaBuilder.notEqual(statusPath, TaskStatus.COMPLETED)).willReturn(notEqualPredicate);
+        given(criteriaBuilder.isNotNull(dueDatePath)).willReturn(isNotNullPredicate);
+        given(criteriaBuilder.and(lessThanPredicate, notEqualPredicate, isNotNullPredicate)).willReturn(andPredicate);
+
+        Specification<Task> spec = TaskSpecification.hasDeadlineFilter(fixedClock, DeadlineFilter.OVERDUE);
+        Predicate result = spec.toPredicate(root, query, criteriaBuilder);
+
+        Assertions.assertThat(result).isEqualTo(andPredicate);
+    }
+
+    @Test
+    @DisplayName("hasDeadlineFilter TODAY: Deve criar predicates corretos")
+    @SuppressWarnings("unchecked")
+    void shouldCreateTodayPredicate() {
+        LocalDateTime fixedNow = LocalDateTime.of(2024, 6, 15, 12, 0);
+        Clock fixedClock = Clock.fixed(fixedNow.atZone(ZoneId.of("UTC")).toInstant(), ZoneId.of("UTC"));
+
+        Path<LocalDateTime> dueDatePath = mock(Path.class);
+        Predicate greaterThanOrEqualPredicate = mock(Predicate.class);
+        Predicate lessThanOrEqualPredicate = mock(Predicate.class);
+        Predicate isNotNullPredicate = mock(Predicate.class);
+        Predicate andPredicate = mock(Predicate.class);
+
+        given(root.<LocalDateTime>get("dueDate")).willReturn(dueDatePath);
+        given(criteriaBuilder.greaterThanOrEqualTo(dueDatePath, fixedNow.toLocalDate().atStartOfDay())).willReturn(greaterThanOrEqualPredicate);
+        given(criteriaBuilder.lessThanOrEqualTo(dueDatePath, fixedNow.toLocalDate().atTime(java.time.LocalTime.MAX))).willReturn(lessThanOrEqualPredicate);
+        given(criteriaBuilder.isNotNull(dueDatePath)).willReturn(isNotNullPredicate);
+        given(criteriaBuilder.and(greaterThanOrEqualPredicate, lessThanOrEqualPredicate, isNotNullPredicate)).willReturn(andPredicate);
+
+        Specification<Task> spec = TaskSpecification.hasDeadlineFilter(fixedClock, DeadlineFilter.TODAY);
+        Predicate result = spec.toPredicate(root, query, criteriaBuilder);
+
+        Assertions.assertThat(result).isEqualTo(andPredicate);
+    }
+
+    @Test
+    @DisplayName("hasDeadlineFilter THIS_WEEK: Deve criar predicates corretos")
+    @SuppressWarnings("unchecked")
+    void shouldCreateThisWeekPredicate() {
+        LocalDateTime fixedNow = LocalDateTime.of(2024, 6, 15, 12, 0);
+        Clock fixedClock = Clock.fixed(fixedNow.atZone(ZoneId.of("UTC")).toInstant(), ZoneId.of("UTC"));
+
+        Path<LocalDateTime> dueDatePath = mock(Path.class);
+        Predicate greaterThanOrEqualPredicate = mock(Predicate.class);
+        Predicate lessThanOrEqualPredicate = mock(Predicate.class);
+        Predicate isNotNullPredicate = mock(Predicate.class);
+        Predicate andPredicate = mock(Predicate.class);
+
+        given(root.<LocalDateTime>get("dueDate")).willReturn(dueDatePath);
+        given(criteriaBuilder.greaterThanOrEqualTo(dueDatePath, fixedNow.toLocalDate().atStartOfDay())).willReturn(greaterThanOrEqualPredicate);
+        given(criteriaBuilder.lessThanOrEqualTo(dueDatePath, fixedNow.toLocalDate().plusDays(6).atTime(java.time.LocalTime.MAX))).willReturn(lessThanOrEqualPredicate);
+        given(criteriaBuilder.isNotNull(dueDatePath)).willReturn(isNotNullPredicate);
+        given(criteriaBuilder.and(greaterThanOrEqualPredicate, lessThanOrEqualPredicate, isNotNullPredicate)).willReturn(andPredicate);
+
+        Specification<Task> spec = TaskSpecification.hasDeadlineFilter(fixedClock, DeadlineFilter.THIS_WEEK);
+        Predicate result = spec.toPredicate(root, query, criteriaBuilder);
+
+        Assertions.assertThat(result).isEqualTo(andPredicate);
+    }
+
+    @Test
+    @DisplayName("isArchived: Deve criar predicate archived = false quando includeArchived for false")
+    @SuppressWarnings("unchecked")
+    void shouldCreateIsArchivedFalseSpecification() {
+        Path<Object> archivedPath = mock(Path.class);
+        Predicate falsePredicate = mock(Predicate.class);
+
+        given(root.get("archived")).willReturn(archivedPath);
+        given(criteriaBuilder.equal(archivedPath, false)).willReturn(falsePredicate);
+
+        Specification<Task> spec = TaskSpecification.isArchived(false);
+        Predicate result = spec.toPredicate(root, query, criteriaBuilder);
+
+        Assertions.assertThat(result).isEqualTo(falsePredicate);
+    }
+
+    @Test
+    @DisplayName("isArchived: Deve retornar null quando includeArchived for true")
+    void shouldReturnNullWhenIncludeArchivedIsTrue() {
+        Specification<Task> spec = TaskSpecification.isArchived(true);
+        Predicate result = spec.toPredicate(root, query, criteriaBuilder);
+        Assertions.assertThat(result).isNull();
+    }
+
+    @Test
+    @DisplayName("isArchived: Deve criar predicate archived = false quando includeArchived for null")
+    @SuppressWarnings("unchecked")
+    void shouldCreateIsArchivedFalseWhenIncludeArchivedIsNull() {
+        Path<Object> archivedPath = mock(Path.class);
+        Predicate falsePredicate = mock(Predicate.class);
+
+        given(root.get("archived")).willReturn(archivedPath);
+        given(criteriaBuilder.equal(archivedPath, false)).willReturn(falsePredicate);
+
+        Specification<Task> spec = TaskSpecification.isArchived(null);
+        Predicate result = spec.toPredicate(root, query, criteriaBuilder);
+
+        Assertions.assertThat(result).isEqualTo(falsePredicate);
     }
 }

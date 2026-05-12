@@ -77,6 +77,7 @@ class TaskServiceTest {
                 LocalDateTime.now().plusDays(2),
                 Collections.emptyList(),
                 Collections.emptySet(),
+                null,
                 null
         );
 
@@ -86,6 +87,7 @@ class TaskServiceTest {
                 "Review and update the standard operating procedures for new client onboarding processes.",
                 TaskStatus.PENDING,
                 TaskPriority.MEDIUM,
+                false,
                 LocalDateTime.now().plusDays(2),
                 java.math.BigDecimal.ZERO,
                 Instant.now(),
@@ -184,6 +186,7 @@ class TaskServiceTest {
                 LocalDateTime.now().plusDays(2),
                 Collections.emptyList(),
                 tags,
+                null,
                 null
         );
 
@@ -290,7 +293,7 @@ class TaskServiceTest {
     @Test
     @DisplayName("Should return a paginated list of TaskSummaryResponseDTO when findAll is called")
     void findAll_ShouldReturnPagedTaskSummaryResponseDTO_WhenSuccessful() {
-        TaskFilter filter = new TaskFilter("Update", TaskStatus.PENDING, Set.of("tech"), null);
+        TaskFilter filter = new TaskFilter("Update", TaskStatus.PENDING, Set.of("tech"), null, null, null);
         Pageable pageable = PageRequest.of(0, 10);
         Page<Task> taskPage = new PageImpl<>(List.of(taskEntity));
 
@@ -300,6 +303,7 @@ class TaskServiceTest {
                 taskEntity.getDescription(),
                 taskEntity.getStatus(),
                 taskEntity.getPriority(),
+                taskEntity.getArchived(),
                 taskEntity.getDueDate(),
                 taskEntity.getCreatedAt(),
                 taskEntity.getUpdatedAt(),

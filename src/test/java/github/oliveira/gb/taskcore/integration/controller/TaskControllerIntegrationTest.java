@@ -43,6 +43,7 @@ class TaskControllerIntegrationTest extends IntegrationTestBase {
                 LocalDateTime.now().plusDays(2),
                 Collections.emptyList(),
                 Collections.emptySet(),
+                null,
                 null
         );
     }
@@ -70,6 +71,7 @@ class TaskControllerIntegrationTest extends IntegrationTestBase {
                 LocalDateTime.now().plusDays(2),
                 Collections.emptyList(),
                 Collections.emptySet(),
+                null,
                 null
         );
 
@@ -90,6 +92,7 @@ class TaskControllerIntegrationTest extends IntegrationTestBase {
                 LocalDateTime.now().minusDays(1),
                 Collections.emptyList(),
                 Collections.emptySet(),
+                null,
                 null
         );
 
@@ -109,6 +112,7 @@ class TaskControllerIntegrationTest extends IntegrationTestBase {
                 LocalDateTime.now().plusDays(2),
                 Collections.emptyList(),
                 Collections.emptySet(),
+                null,
                 null
         );
 
@@ -128,6 +132,7 @@ class TaskControllerIntegrationTest extends IntegrationTestBase {
                 LocalDateTime.now().plusDays(5),
                 Collections.emptyList(),
                 Collections.emptySet(),
+                null,
                 null
         );
 
@@ -164,6 +169,7 @@ class TaskControllerIntegrationTest extends IntegrationTestBase {
                 LocalDateTime.now().plusDays(5),
                 Collections.emptyList(),
                 Collections.emptySet(),
+                null,
                 null
         );
 
@@ -181,6 +187,7 @@ class TaskControllerIntegrationTest extends IntegrationTestBase {
                 LocalDateTime.now().plusDays(10),
                 Collections.emptyList(),
                 Collections.emptySet(),
+                null,
                 null
         );
 
@@ -201,6 +208,7 @@ class TaskControllerIntegrationTest extends IntegrationTestBase {
                 LocalDateTime.now().plusDays(10),
                 Collections.emptyList(),
                 Collections.emptySet(),
+                null,
                 null
         );
 
@@ -220,6 +228,7 @@ class TaskControllerIntegrationTest extends IntegrationTestBase {
                 LocalDateTime.now().plusDays(5),
                 Collections.emptyList(),
                 Collections.emptySet(),
+                null,
                 null
         );
 
@@ -257,6 +266,7 @@ class TaskControllerIntegrationTest extends IntegrationTestBase {
                     LocalDateTime.now().plusDays(i + 1),
                     Collections.emptyList(),
                     Collections.emptySet(),
+                    null,
                     null
             );
             mockMvc.perform(post(baseUrl)
@@ -283,7 +293,8 @@ class TaskControllerIntegrationTest extends IntegrationTestBase {
                 LocalDateTime.now().plusDays(5),
                 Collections.emptyList(),
                 Collections.emptySet(),
-                TaskPriority.HIGH
+                TaskPriority.HIGH,
+                null
         );
 
         mockMvc.perform(post(baseUrl)
@@ -322,7 +333,8 @@ class TaskControllerIntegrationTest extends IntegrationTestBase {
                 LocalDateTime.now().plusDays(5),
                 Collections.emptyList(),
                 Collections.emptySet(),
-                TaskPriority.LOW
+                TaskPriority.LOW,
+                null
         );
 
         MvcResult createResult = mockMvc.perform(post(baseUrl)
@@ -339,7 +351,8 @@ class TaskControllerIntegrationTest extends IntegrationTestBase {
                 LocalDateTime.now().plusDays(5),
                 Collections.emptyList(),
                 Collections.emptySet(),
-                TaskPriority.CRITICAL
+                TaskPriority.CRITICAL,
+                null
         );
 
         mockMvc.perform(put(baseUrl + "/{id}", taskId)
@@ -359,7 +372,8 @@ class TaskControllerIntegrationTest extends IntegrationTestBase {
                 LocalDateTime.now().plusDays(5),
                 Collections.emptyList(),
                 Collections.emptySet(),
-                TaskPriority.HIGH
+                TaskPriority.HIGH,
+                null
         );
 
         TaskRequestDTO mediumPriorityRequest = new TaskRequestDTO(
@@ -368,7 +382,8 @@ class TaskControllerIntegrationTest extends IntegrationTestBase {
                 LocalDateTime.now().plusDays(5),
                 Collections.emptyList(),
                 Collections.emptySet(),
-                TaskPriority.MEDIUM
+                TaskPriority.MEDIUM,
+                null
         );
 
         mockMvc.perform(post(baseUrl)
@@ -523,6 +538,7 @@ class TaskControllerIntegrationTest extends IntegrationTestBase {
                 LocalDateTime.now().plusDays(5),
                 Collections.emptyList(),
                 Collections.emptySet(),
+                null,
                 null
         );
 
@@ -551,6 +567,7 @@ class TaskControllerIntegrationTest extends IntegrationTestBase {
                 LocalDateTime.now().plusDays(5),
                 Collections.emptyList(),
                 Collections.emptySet(),
+                null,
                 null
         );
 
@@ -580,6 +597,104 @@ class TaskControllerIntegrationTest extends IntegrationTestBase {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(jsonWithNullStatus))
                 .andExpect(status().isBadRequest())
+                .andDo(print());
+    }
+
+    @Test
+    @DisplayName("E2E: Should filter tasks by deadline=TODAY and return 200 OK")
+    void shouldFilterTasksByDeadlineToday() throws Exception {
+        // Create a task due today (in future hours to avoid validation issues)
+        TaskRequestDTO todayTask = new TaskRequestDTO(
+                "Task Due Today",
+                "Description",
+                LocalDateTime.now().plusHours(1),
+                Collections.emptyList(),
+                Collections.emptySet(),
+                null,
+                null
+        );
+
+        // Create a task due tomorrow
+        TaskRequestDTO tomorrowTask = new TaskRequestDTO(
+                "Task Due Tomorrow",
+                "Description",
+                LocalDateTime.now().plusDays(1).plusHours(1),
+                Collections.emptyList(),
+                Collections.emptySet(),
+                null,
+                null
+        );
+
+        mockMvc.perform(post(baseUrl)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(toJson(todayTask)))
+                .andExpect(status().isCreated());
+
+        mockMvc.perform(post(baseUrl)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(toJson(tomorrowTask)))
+                .andExpect(status().isCreated());
+
+        // Filter by TODAY
+        mockMvc.perform(get(baseUrl)
+                        .param("deadline", "TODAY"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.content").isArray())
+                .andExpect(jsonPath("$.content[0].title").value("Task Due Today"))
+                .andDo(print());
+    }
+
+    @Test
+    @DisplayName("E2E: Should filter tasks by deadline=THIS_WEEK and return 200 OK")
+    void shouldFilterTasksByDeadlineThisWeek() throws Exception {
+        // Create a task due in 3 days
+        TaskRequestDTO thisWeekTask = new TaskRequestDTO(
+                "Task Due This Week",
+                "Description",
+                LocalDateTime.now().plusDays(3),
+                Collections.emptyList(),
+                Collections.emptySet(),
+                null,
+                null
+        );
+
+        // Create a task due in 10 days (outside this week)
+        TaskRequestDTO nextWeekTask = new TaskRequestDTO(
+                "Task Due Next Week",
+                "Description",
+                LocalDateTime.now().plusDays(10),
+                Collections.emptyList(),
+                Collections.emptySet(),
+                null,
+                null
+        );
+
+        mockMvc.perform(post(baseUrl)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(toJson(thisWeekTask)))
+                .andExpect(status().isCreated());
+
+        mockMvc.perform(post(baseUrl)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(toJson(nextWeekTask)))
+                .andExpect(status().isCreated());
+
+        // Filter by THIS_WEEK
+        mockMvc.perform(get(baseUrl)
+                        .param("deadline", "THIS_WEEK"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.content").isArray())
+                .andExpect(jsonPath("$.content[0].title").value("Task Due This Week"))
+                .andDo(print());
+    }
+
+    @Test
+    @DisplayName("E2E: Should return 400 Bad Request for invalid deadline filter value")
+    void shouldReturn400ForInvalidDeadlineFilter() throws Exception {
+        mockMvc.perform(get(baseUrl)
+                        .param("deadline", "INVALID_FILTER"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.messages[0]").exists())
                 .andDo(print());
     }
 

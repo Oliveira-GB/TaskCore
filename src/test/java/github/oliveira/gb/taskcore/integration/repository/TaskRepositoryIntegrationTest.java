@@ -1,5 +1,6 @@
 package github.oliveira.gb.taskcore.integration.repository;
 
+import github.oliveira.gb.taskcore.domain.model.DeadlineFilter;
 import github.oliveira.gb.taskcore.domain.model.Subtask;
 import github.oliveira.gb.taskcore.domain.model.Tag;
 import github.oliveira.gb.taskcore.domain.model.Task;
@@ -18,7 +19,10 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Clock;
+import java.time.Instant;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -297,5 +301,180 @@ class TaskRepositoryIntegrationTest extends IntegrationTestBase {
         Task savedTask = taskRepository.save(task);
 
         Assertions.assertThat(savedTask.getPriority()).isEqualTo(TaskPriority.MEDIUM);
+    }
+
+    @Test
+    @DisplayName("Should filter overdue tasks excluding completed ones using Specifications")
+    void shouldFilterOverdueTasksExcludingCompleted() {
+        // Fixed clock at June 15, 2024 12:00:00 UTC
+        LocalDateTime fixedNow = LocalDateTime.of(2024, 6, 15, 12, 0);
+        Clock fixedClock = Clock.fixed(fixedNow.atZone(ZoneId.of("UTC")).toInstant(), ZoneId.of("UTC"));
+
+        // Overdue task (PENDING)
+        Task overduePending = new Task();
+        overduePending.setTitle("Overdue Pending Task");
+        overduePending.setStatus(TaskStatus.PENDING);
+        overduePending.setDueDate(fixedNow.minusDays(1));
+        taskRepository.save(overduePending);
+
+        // Overdue task (COMPLETED) - should be excluded
+        Task overdueCompleted = new Task();
+        overdueCompleted.setTitle("Overdue Completed Task");
+        overdueCompleted.setStatus(TaskStatus.COMPLETED);
+        overdueCompleted.setDueDate(fixedNow.minusDays(2));
+        taskRepository.save(overdueCompleted);
+
+        // Task due today
+        Task dueToday = new Task();
+        dueToday.setTitle("Due Today Task");
+        dueToday.setStatus(TaskStatus.PENDING);
+        dueToday.setDueDate(fixedNow.plusHours(2));
+        taskRepository.save(dueToday);
+
+        // Task without due date
+        Task noDueDate = new Task();
+        noDueDate.setTitle("No Due Date Task");
+        noDueDate.setStatus(TaskStatus.PENDING);
+        taskRepository.save(noDueDate);
+
+        Specification<Task> spec = TaskSpecification.hasDeadlineFilter(fixedClock, DeadlineFilter.OVERDUE);
+        List<Task> overdueTasks = taskRepository.findAll(spec);
+
+        Assertions.assertThat(overdueTasks).hasSize(1);
+        Assertions.assertThat(overdueTasks.get(0).getTitle()).isEqualTo("Overdue Pending Task");
+    }
+
+    @Test
+    @DisplayName("Should filter tasks due today using Specifications")
+    void shouldFilterTasksDueToday() {
+        // Fixed clock at June 15, 2024 12:00:00 UTC
+        LocalDateTime fixedNow = LocalDateTime.of(2024, 6, 15, 12, 0);
+        Clock fixedClock = Clock.fixed(fixedNow.atZone(ZoneId.of("UTC")).toInstant(), ZoneId.of("UTC"));
+
+        // Task due today at 10:00
+        Task dueTodayMorning = new Task();
+        dueTodayMorning.setTitle("Due Today Morning");
+        dueTodayMorning.setStatus(TaskStatus.PENDING);
+        dueTodayMorning.setDueDate(fixedNow.withHour(10).withMinute(0));
+        taskRepository.save(dueTodayMorning);
+
+        // Task due today at 18:00
+        Task dueTodayEvening = new Task();
+        dueTodayEvening.setTitle("Due Today Evening");
+        dueTodayEvening.setStatus(TaskStatus.PENDING);
+        dueTodayEvening.setDueDate(fixedNow.withHour(18).withMinute(0));
+        taskRepository.save(dueTodayEvening);
+
+        // Task due tomorrow
+        Task dueTomorrow = new Task();
+        dueTomorrow.setTitle("Due Tomorrow");
+        dueTomorrow.setStatus(TaskStatus.PENDING);
+        dueTomorrow.setDueDate(fixedNow.plusDays(1).withHour(10).withMinute(0));
+        taskRepository.save(dueTomorrow);
+
+        // Task without due date
+        Task noDueDate = new Task();
+        noDueDate.setTitle("No Due Date");
+        noDueDate.setStatus(TaskStatus.PENDING);
+        taskRepository.save(noDueDate);
+
+        Specification<Task> spec = TaskSpecification.hasDeadlineFilter(fixedClock, DeadlineFilter.TODAY);
+        List<Task> todayTasks = taskRepository.findAll(spec);
+
+        Assertions.assertThat(todayTasks).hasSize(2);
+        Assertions.assertThat(todayTasks)
+                .extracting(Task::getTitle)
+                .containsExactlyInAnyOrder("Due Today Morning", "Due Today Evening");
+    }
+
+    @Test
+    @DisplayName("Should filter tasks due this week using Specifications")
+    void shouldFilterTasksDueThisWeek() {
+        // Fixed clock at June 15, 2024 12:00:00 UTC
+        LocalDateTime fixedNow = LocalDateTime.of(2024, 6, 15, 12, 0);
+        Clock fixedClock = Clock.fixed(fixedNow.atZone(ZoneId.of("UTC")).toInstant(), ZoneId.of("UTC"));
+
+        // Task due today
+        Task dueToday = new Task();
+        dueToday.setTitle("Due Today");
+        dueToday.setStatus(TaskStatus.PENDING);
+        dueToday.setDueDate(fixedNow.plusHours(2));
+        taskRepository.save(dueToday);
+
+        // Task due in 3 days
+        Task dueIn3Days = new Task();
+        dueIn3Days.setTitle("Due In 3 Days");
+        dueIn3Days.setStatus(TaskStatus.PENDING);
+        dueIn3Days.setDueDate(fixedNow.plusDays(3));
+        taskRepository.save(dueIn3Days);
+
+        // Task due in 6 days (still this week)
+        Task dueIn6Days = new Task();
+        dueIn6Days.setTitle("Due In 6 Days");
+        dueIn6Days.setStatus(TaskStatus.PENDING);
+        dueIn6Days.setDueDate(fixedNow.plusDays(6).withHour(23).withMinute(59));
+        taskRepository.save(dueIn6Days);
+
+        // Task due in 8 days (outside this week)
+        Task dueIn8Days = new Task();
+        dueIn8Days.setTitle("Due In 8 Days");
+        dueIn8Days.setStatus(TaskStatus.PENDING);
+        dueIn8Days.setDueDate(fixedNow.plusDays(8));
+        taskRepository.save(dueIn8Days);
+
+        // Task without due date
+        Task noDueDate = new Task();
+        noDueDate.setTitle("No Due Date");
+        noDueDate.setStatus(TaskStatus.PENDING);
+        taskRepository.save(noDueDate);
+
+        Specification<Task> spec = TaskSpecification.hasDeadlineFilter(fixedClock, DeadlineFilter.THIS_WEEK);
+        List<Task> thisWeekTasks = taskRepository.findAll(spec);
+
+        Assertions.assertThat(thisWeekTasks).hasSize(3);
+        Assertions.assertThat(thisWeekTasks)
+                .extracting(Task::getTitle)
+                .containsExactlyInAnyOrder("Due Today", "Due In 3 Days", "Due In 6 Days");
+    }
+
+    @Test
+    @DisplayName("Should exclude tasks without due date when deadline filter is applied")
+    void shouldExcludeTasksWithoutDueDate() {
+        // Fixed clock at June 15, 2024 12:00:00 UTC
+        LocalDateTime fixedNow = LocalDateTime.of(2024, 6, 15, 12, 0);
+        Clock fixedClock = Clock.fixed(fixedNow.atZone(ZoneId.of("UTC")).toInstant(), ZoneId.of("UTC"));
+
+        // Task without due date
+        Task noDueDate = new Task();
+        noDueDate.setTitle("No Due Date Task");
+        noDueDate.setStatus(TaskStatus.PENDING);
+        taskRepository.save(noDueDate);
+
+        // Task due today
+        Task dueToday = new Task();
+        dueToday.setTitle("Due Today Task");
+        dueToday.setStatus(TaskStatus.PENDING);
+        dueToday.setDueDate(fixedNow.plusHours(2));
+        taskRepository.save(dueToday);
+
+        // Test TODAY filter
+        Specification<Task> todaySpec = TaskSpecification.hasDeadlineFilter(fixedClock, DeadlineFilter.TODAY);
+        List<Task> todayTasks = taskRepository.findAll(todaySpec);
+
+        Assertions.assertThat(todayTasks).hasSize(1);
+        Assertions.assertThat(todayTasks.get(0).getTitle()).isEqualTo("Due Today Task");
+
+        // Test THIS_WEEK filter
+        Specification<Task> weekSpec = TaskSpecification.hasDeadlineFilter(fixedClock, DeadlineFilter.THIS_WEEK);
+        List<Task> weekTasks = taskRepository.findAll(weekSpec);
+
+        Assertions.assertThat(weekTasks).hasSize(1);
+        Assertions.assertThat(weekTasks.get(0).getTitle()).isEqualTo("Due Today Task");
+
+        // Test OVERDUE filter
+        Specification<Task> overdueSpec = TaskSpecification.hasDeadlineFilter(fixedClock, DeadlineFilter.OVERDUE);
+        List<Task> overdueTasks = taskRepository.findAll(overdueSpec);
+
+        Assertions.assertThat(overdueTasks).isEmpty();
     }
 }
